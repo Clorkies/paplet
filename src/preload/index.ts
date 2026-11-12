@@ -1,0 +1,5 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import type { StickeeAPI } from '../shared/api'
+const api:StickeeAPI={onDragState:callback=>{const listener=(_event:Electron.IpcRendererEvent,dragging:boolean)=>callback(dragging);ipcRenderer.on('drag-state',listener);return()=>ipcRenderer.removeListener('drag-state',listener)},text:(value,flush=false)=>ipcRenderer.send('text',value,flush),create:()=>ipcRenderer.send('create'),hide:()=>ipcRenderer.send('hide'),config:()=>ipcRenderer.invoke('config'),drag:action=>ipcRenderer.send('drag',action),experiment:(mode,nativeDrag)=>ipcRenderer.invoke('experiment',mode,nativeDrag),quit:()=>ipcRenderer.send('quit'),onMotion:callback=>{const listener=(_event:Electron.IpcRendererEvent,motion:{dx:number;dy:number;grabX:number;grabY:number;angle:number;curlSide:'left'|'right'})=>callback(motion);ipcRenderer.on('motion',listener);return()=>ipcRenderer.removeListener('motion',listener)},onSettle:callback=>{const listener=()=>callback();ipcRenderer.on('settle',listener);return()=>ipcRenderer.removeListener('settle',listener)}}
+contextBridge.exposeInMainWorld('stickee',api)
+
