@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" fill="none">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="520" gradientUnits="userSpaceOnUse"><stop stop-color="#F7F6F0"/><stop offset="1" stop-color="#EEEEE5"/></linearGradient>
+    <linearGradient id="yellow" x1="730" y1="120" x2="920" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF0AD"/><stop offset="1" stop-color="#EED987"/></linearGradient>
+    <linearGradient id="peach" x1="630" y1="70" x2="800" y2="310" gradientUnits="userSpaceOnUse"><stop stop-color="#F8DCC6"/><stop offset="1" stop-color="#EFC6A8"/></linearGradient>
+    <linearGradient id="curl" x1="957" y1="350" x2="986" y2="389" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF9DA"/><stop offset=".55" stop-color="#D3C18A"/><stop offset="1" stop-color="#A89A72"/></linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="160%" height="170%"><feDropShadow dy="12" stdDeviation="13" flood-color="#4C4532" flood-opacity=".13"/><feDropShadow dy="2" stdDeviation="2" flood-color="#4C4532" flood-opacity=".12"/></filter>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".65" fill="#8C907E" opacity=".15"/></pattern>
+  </defs>
+  <rect width="1200" height="520" rx="16" fill="url(#background)"/>
+  <rect x="580" width="620" height="520" fill="url(#dots)"/>
+  <g font-family="Segoe UI, Arial, sans-serif" fill="#383B30">
+    <text x="76" y="111" font-size="13" letter-spacing="5" fill="#70755F">A LITTLE PAPER. A LITTLE PRESENCE.</text>
+    <text x="70" y="230" font-size="94" font-weight="600" letter-spacing="-5">Stickee</text>
+    <text x="76" y="291" font-size="26" letter-spacing="-.5">Keep a thought in sight.</text>
+    <path d="M76 335H124" stroke="#A5AA92" stroke-width="2"/>
+    <text x="76" y="381" font-size="16" fill="#747865">Physical paper, reimagined for your desktop.</text>
+  </g>
+  <g transform="rotate(-7 780 212)">
+    <path d="M636 82H917V357H636Z" fill="url(#peach)" filter="url(#shadow)"/>
+    <path d="M650 83H903" stroke="#FFFFFF" stroke-opacity=".22"/>
+    <g font-family="Segoe UI, Arial, sans-serif" fill="#6B5040"><text x="665" y="139" font-size="11" letter-spacing="2">A THOUGHT FOR LATER</text><text x="665" y="188" font-size="23">Make room</text><text x="665" y="219" font-size="23">for the small ideas.</text></g>
+  </g>
+  <g transform="rotate(4 922 305)">
+    <path d="M766 163H1046V391C1027 415 1012 430 987 443H766Z" fill="url(#yellow)" filter="url(#shadow)"/>
+    <path d="M987 443C1011 430 1031 406 1046 391C1032 398 1020 391 1009 380C1007 408 999 431 987 443Z" fill="url(#curl)"/>
+    <path d="M987 443C1011 430 1031 406 1046 391" stroke="#FFF9DF" stroke-opacity=".8"/>
+    <g font-family="Segoe UI, Arial, sans-serif" fill="#5C4F2D"><text x="797" y="222" font-size="11" letter-spacing="2">RIGHT HERE, WHEN YOU NEED IT</text><text x="797" y="274" font-size="24">The next little thing.</text><text x="797" y="319" font-size="17">An idea. A line to remember.</text><text x="797" y="348" font-size="17">Something worth keeping close.</text></g>
+  </g>
+</svg>

@@ -62,7 +62,7 @@ Unit tests validate mathematical behavior only. They do not prove Windows input 
 
 ## Experiment verdicts and required manual tests
 
-All native experiments are **CONDITIONAL / UNVERIFIED**, not PASS. Initial manual-loop motion has negative user feedback; revised native mode must be retested. Use the exact PowerShell launch commands in the root README, close the earlier instance, then launch the latest build.
+All native experiments are **CONDITIONAL / UNVERIFIED**, not PASS. Initial manual-loop motion has negative user feedback; revised native mode must be retested. Use the exact PowerShell launch commands in the development guide (`docs/DEVELOPMENT.md`), close the earlier instance, then launch the latest build.
 
 | Experiment | Required Windows 11 verification | Current verdict |
 | --- | --- | --- |
