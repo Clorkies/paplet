@@ -3,7 +3,7 @@ import { randomAppearance } from '../shared/appearance'
 import { randomUUID } from 'node:crypto'
 import { NoteStore, type SavedNote, type SavedData } from './store'
 import { join } from 'node:path'
-import { clampPosition, contains, polygon, region, SIZE } from '../shared/geometry'
+import { clampPosition, contains, polygon, region, movementRegion, SIZE } from '../shared/geometry'
 import { platform } from './platform'
 import type { Config, Mode } from '../shared/api'
 const notes=new Map<number,{win:BrowserWindow;config:Config;record:SavedNote}>()
@@ -56,9 +56,10 @@ async function createWindow(record:SavedNote,focus=false){
    setImmediate(()=>{if(!win.isDestroyed()&&win.isFocused()&&!record.hidden)platform.keepOnTop(win,true)})
   })
   win.on('blur',()=>{setImmediate(()=>{if(!record.hidden)platform.keepOnTop(win)})})
+  let movementEnvelope=false
   if(process.platform==='win32'){
-   win.hookWindowMessage(0x0231,()=>{previous=win.getBounds();lastMotion=performance.now();directionDistance=0;win.webContents.send('drag-state',true)})
-   win.hookWindowMessage(0x0232,()=>{win.webContents.send('drag-state',false);win.webContents.send('settle')})
+   win.hookWindowMessage(0x0231,()=>{previous=win.getBounds();lastMotion=performance.now();directionDistance=0;clearTimeout(shapeTimer);movementEnvelope=true;if(config.mode==='shape'){win.setShape(movementRegion());platform.keepOnTop(win)}win.webContents.send('drag-state',true)})
+   win.hookWindowMessage(0x0232,()=>{win.webContents.send('drag-state',false);win.webContents.send('settle');clearTimeout(shapeTimer);shapeTimer=setTimeout(()=>{movementEnvelope=false;if(!win.isDestroyed())platform.apply(win,config.angle,config.mode,config.curlSide)},1400)})
   }
   // OS owns the drag loop. Only notify the renderer once movement has stopped.
   let settleTimer:ReturnType<typeof setTimeout>|undefined
@@ -77,7 +78,7 @@ async function createWindow(record:SavedNote,focus=false){
     config.curlSide=desiredSide
     config.angle=desired
     clearTimeout(shapeTimer)
-    if(process.platform==='win32'&&config.mode!=='ignore'){
+    if(process.platform==='win32'&&config.mode!=='ignore'&&!movementEnvelope){
      // Preserve both silhouettes while the decorative orientation changes.
      const pad=config.mode==='tight'?0:14
      win.setShape([...region(oldAngle,pad,oldSide),...region(desired,pad,desiredSide)])

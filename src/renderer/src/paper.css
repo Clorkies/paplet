@@ -31,3 +31,8 @@ textarea::-webkit-scrollbar{display:none;width:0;height:0}
 .paper[data-curl-side="left"] .note-actions{left:auto;right:0}
 .paper[data-dragging] .note-actions,.paper[data-dragging] .lab,.paper[data-dragging] .experiments{opacity:0;visibility:hidden;pointer-events:none;transition:opacity 80ms ease,visibility 0s 80ms}
 @media(prefers-reduced-motion:reduce){.note-actions,.paper[data-dragging] .note-actions,.paper[data-dragging] .lab{transition:none}}
+
+/* Preserve keyboard focus indicators at rest; paper has no rectangular outline
+   while the native drag or its decorative settling is in progress. */
+.paper[data-dragging] :focus-visible{outline:none!important}
+.bounds:has(.paper[data-dragging]){outline:none}

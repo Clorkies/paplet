@@ -35,3 +35,17 @@ export function region(angle:number,padding=0,side?:'left'|'right'){
 export function clampPosition(p:Point,area:{x:number;y:number;width:number;height:number}):Point{
   return {x:Math.round(Math.max(area.x,Math.min(p.x,area.x+Math.max(0,area.width-SIZE)))),y:Math.round(Math.max(area.y,Math.min(p.y,area.y+Math.max(0,area.height-SIZE))))}
 }
+let dragEnvelope:ReturnType<typeof region>|undefined
+export function movementRegion(){
+ if(dragEnvelope)return dragEnvelope
+ // Merge a sweep of both curl silhouettes into one scanline per DIP. This
+ // reserves drawing room for fast tilt without a rectangular overlay.
+ const rows=Array.from({length:SIZE},()=>({left:SIZE,right:0}))
+ for(let angle=-11;angle<=11;angle+=2)for(const side of ['left','right'] as const){
+  for(const rect of region(angle,10,side))for(let y=rect.y;y<rect.y+rect.height;y++){
+   rows[y].left=Math.min(rows[y].left,rect.x);rows[y].right=Math.max(rows[y].right,rect.x+rect.width)
+  }
+ }
+ dragEnvelope=rows.flatMap((row,y)=>row.right>row.left?[{x:row.left,y,width:row.right-row.left,height:1}]:[])
+ return dragEnvelope
+}

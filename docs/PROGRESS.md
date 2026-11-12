@@ -53,7 +53,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks: `npm run build` (includes strict typecheck) and `npm test`, **8 tests across 3 files passed**. Packaging, live shortcut collisions, mixed-DPI hardware and the latest native regression are **NOT RUN by the agent**. Detailed historical evidence is in [FEASIBILITY.md](FEASIBILITY.md).
+Latest executed checks: `npm run build` (includes strict typecheck) and `npm test`, **14 tests across 5 files passed**. Packaging, live shortcut collisions, mixed-DPI hardware and the latest native regression are **NOT RUN by the agent**. Detailed historical evidence is in [FEASIBILITY.md](FEASIBILITY.md).
 
 ## Phase 3B — main application direction
 
@@ -83,3 +83,10 @@ This checkpoint is development progress, not a packaged beta or a declaration th
 Branch `improve/paper-motion` refines the paper with coupled middle/free-edge springs, exact damped spring integration, soft velocity saturation and native motion sampling at up to roughly 60 Hz. Creation now independently randomizes curl side and resting tilt (up to 2.3 degrees either way, with a 25% chance of zero tilt). Curl side is persisted separately from angle; old saves remain compatible. Native hit regions now accept explicit curl side so straight notes and independently randomized curls align with their rendering.
 
 Automated build/typecheck and tests recorded for the branch; visual acceptance is pending. Compare slow movement, fast reversals, off-center grabbing and release on the actual Windows compositor before judging this as a final improvement. Existing shape padding/click-through tradeoffs remain. No main-branch merge or remote publication requested for this experiment.
+
+
+## Velocity-driven swing follow-up (2026-11-13)
+
+Editor focus outlines and experiment bounds are suppressed only while dragging/settling; keyboard focus indicators return at rest. Native horizontal velocity (DIP per 16 ms, converted to DIP/second) drives an independent damped angular spring. Slow movement remains subtle; fast movement smoothly saturates at 6.5 degrees additional target tilt, with a 7-degree visual safety bound. Release returns the target to zero without resetting spring velocity, so reversal and recovery remain continuous. Reduced motion bypasses swing.
+
+Default shape mode temporarily uses a cached, nonrectangular union of rotated silhouettes during native drag and for 1.4 seconds after release. This accommodates larger visual tilt without per-frame region regeneration. It also broadens the interactive transparent fringe during that interval. Tight mode remains a clipping diagnostic; ignore mode retains its existing static-polygon limitations. Manual checks needed: focused editor drag (no dashed rectangle), slow/fast sweeps, rapid reversal, release, corners/shadows at maximum tilt, regrab during settling, and restored keyboard focus outlines. Actual Windows GUI verification remains NOT RUN by agent.

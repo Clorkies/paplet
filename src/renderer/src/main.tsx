@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Config, Mode } from '../../shared/api'
 import { paperSurface } from '../../shared/paper'
-import { settleAngle, springStep } from '../../shared/motion'
+import { settleAngle, springStep, speedTilt } from '../../shared/motion'
 import './paper.css'
 function App(){
  const [config,setConfig]=useState<Config>(),[count,setCount]=useState(0),[point,setPoint]=useState(''),[debug,setDebug]=useState(false)
@@ -16,7 +16,7 @@ function App(){
  const curlSide:'left'|'right'=config?.curlSide??'right'
  useEffect(()=>{
   if(!config)return
-  let nativeDragging=false
+  let nativeDragging=false,swing={position:0,velocity:0},swingTarget=0
   let midX={position:0,velocity:0},midY={position:0,velocity:0},tailX={position:0,velocity:0},tailY={position:0,velocity:0}
   let side=curlSide,curlPhase=curlSide==='right'?1:-1,curlTarget=curlPhase,orientation=config.angle,orientationTarget=config.angle,angularVelocity=0
   let frame=0,last=0,x=0,y=0,vx=0,vy=0,tx=0,ty=0,grabX=180,grabY=65,moving=false
@@ -27,6 +27,7 @@ function App(){
    last=time
    midX=springStep(midX,tx,elapsed,19,.78);midY=springStep(midY,ty,elapsed,21,.8)
    tailX=springStep(tailX,midX.position,elapsed,12,.63);tailY=springStep(tailY,midY.position,elapsed,14,.68)
+   swing=springStep(swing,swingTarget,elapsed,16,.68)
    x=tailX.position;y=tailY.position;vx=tailX.velocity;vy=tailY.velocity
    const angular=springStep({position:orientation,velocity:angularVelocity},orientationTarget,elapsed,15,.85)
    orientation=angular.position;angularVelocity=angular.velocity
@@ -42,12 +43,12 @@ function App(){
    surface.current?.setAttribute('d',shape.path)
    curl.current?.setAttribute('transform',shape.curlTransform)
    if(content.current){content.current.style.transformOrigin=`${grabX-64}px ${grabY-53}px`;content.current.style.transform=`skewX(${midX.position*.07}deg) rotate(${midX.position*.025}deg)`}
-   if(paper.current){paper.current.style.setProperty('--lift',String(Math.min(1,Math.abs(x)/5+Math.abs(y)/5)));paper.current.style.transform=`rotate(${orientation-x*.065}deg)`}
-   if(moving||Math.abs(curlTarget-curlPhase)>.001||Math.abs(midX.velocity)+Math.abs(midY.velocity)+Math.abs(midX.position)+Math.abs(midY.position)+Math.abs(x)+Math.abs(y)+Math.abs(vx)+Math.abs(vy)+Math.abs(orientationTarget-orientation)+Math.abs(angularVelocity)>.015)frame=requestAnimationFrame(tick)
+   if(paper.current){paper.current.style.setProperty('--lift',String(Math.min(1,Math.abs(x)/5+Math.abs(y)/5)));paper.current.style.transform=`rotate(${orientation+Math.max(-7,Math.min(7,swing.position))-x*.065}deg)`}
+   if(moving||Math.abs(swing.position)+Math.abs(swing.velocity)>.015||Math.abs(curlTarget-curlPhase)>.001||Math.abs(midX.velocity)+Math.abs(midY.velocity)+Math.abs(midX.position)+Math.abs(midY.position)+Math.abs(x)+Math.abs(y)+Math.abs(vx)+Math.abs(vy)+Math.abs(orientationTarget-orientation)+Math.abs(angularVelocity)>.015)frame=requestAnimationFrame(tick)
    else{frame=0;last=0;if(!nativeDragging)paper.current?.removeAttribute('data-dragging')}
   }
   const wake=()=>{if(!frame)frame=requestAnimationFrame(tick)}
-  const release=()=>{moving=false;tx=0;ty=0;wake()}
+  const release=()=>{moving=false;tx=0;ty=0;swingTarget=0;wake()}
   const offMotion=window.stickee.onMotion(motion=>{
    orientationTarget=motion.angle
    curlTarget=motion.curlSide==='right'?1:-1
@@ -59,6 +60,7 @@ function App(){
     paper.current!.style.transform=`rotate(${orientation}deg)`;return
    }
    grabX=motion.grabX;grabY=motion.grabY;moving=true
+   swingTarget=speedTilt(motion.dx*62.5)
    tx=-8*Math.tanh(motion.dx/9);ty=-6*Math.tanh(motion.dy/10)
    clearTimeout(quiet);quiet=setTimeout(release,130);wake()
   })
