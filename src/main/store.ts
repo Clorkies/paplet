@@ -1,13 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, copyFileSync, openSync, fsyncSync, closeSync } from 'node:fs'
 import { join } from 'node:path'
-export type SavedNote={id:string;text:string;note:number;angle:number;x:number;y:number;hidden:boolean}
+export type SavedNote={curlSide?:'left'|'right';id:string;text:string;note:number;angle:number;x:number;y:number;hidden:boolean}
 export type SavedData={schemaVersion:1;notes:SavedNote[]}
 export function parseData(raw:string):SavedData {
  const data=JSON.parse(raw) as SavedData
  if(data.schemaVersion!==1||!Array.isArray(data.notes))throw new Error('Unsupported or invalid notes file')
  const ids=new Set<string>()
  for(const n of data.notes){
-  if(typeof n.id!=='string'||ids.has(n.id)||typeof n.text!=='string'||n.text.length>1_000_000||![0,1].includes(n.note)||!Number.isFinite(n.angle)||Math.abs(n.angle)>3||!Number.isFinite(n.x)||!Number.isFinite(n.y)||typeof n.hidden!=='boolean')throw new Error('Invalid note')
+  if((n.curlSide!==undefined&&!['left','right'].includes(n.curlSide))||typeof n.id!=='string'||ids.has(n.id)||typeof n.text!=='string'||n.text.length>1_000_000||![0,1].includes(n.note)||!Number.isFinite(n.angle)||Math.abs(n.angle)>3||!Number.isFinite(n.x)||!Number.isFinite(n.y)||typeof n.hidden!=='boolean')throw new Error('Invalid note')
   ids.add(n.id)
  }
  return data

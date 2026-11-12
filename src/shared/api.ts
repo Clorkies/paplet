@@ -1,5 +1,5 @@
 export type Mode='shape'|'tight'|'ignore'
-export type Config={text:string;note:number;angle:number;mode:Mode;nativeDrag:boolean;status:string}
+export type Config={curlSide:'left'|'right';text:string;note:number;angle:number;mode:Mode;nativeDrag:boolean;status:string}
 export interface StickeeAPI {
  config():Promise<Config>
  text(value:string,flush?:boolean):void

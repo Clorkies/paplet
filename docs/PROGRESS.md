@@ -1,6 +1,6 @@
 # Stickee progress tracker
 
-Last updated: 2026-11-12. Work is stopped at this checkpoint at the user's request.
+Last updated: 2026-11-13. Work resumed on `improve/paper-motion` for a focused motion experiment.
 
 **Current position:** Phase 1 is implemented with native Windows acceptance pending. Parts of Phase 2 were developed early to establish the paper interaction. The user accepted the current look and motion; this does not certify every native-window test.
 
@@ -76,3 +76,10 @@ No manager UI or settings screen has been built yet. Profile support is a separa
 4. Advance through reliability work before starting the main manager milestone.
 
 This checkpoint is development progress, not a packaged beta or a declaration that the full MVP is complete.
+
+
+## Paper-motion branch ? 2026-11-13
+
+Branch `improve/paper-motion` refines the paper with coupled middle/free-edge springs, exact damped spring integration, soft velocity saturation and native motion sampling at up to roughly 60 Hz. Creation now independently randomizes curl side and resting tilt (up to 2.3 degrees either way, with a 25% chance of zero tilt). Curl side is persisted separately from angle; old saves remain compatible. Native hit regions now accept explicit curl side so straight notes and independently randomized curls align with their rendering.
+
+Automated build/typecheck and tests recorded for the branch; visual acceptance is pending. Compare slow movement, fast reversals, off-center grabbing and release on the actual Windows compositor before judging this as a final improvement. Existing shape padding/click-through tradeoffs remain. No main-branch merge or remote publication requested for this experiment.

@@ -122,3 +122,10 @@ Build/typecheck and four existing tests pass; the new visual transition is not c
 ## Phase 1 authorization
 
 The user accepted current appearance/motion and explicitly requested Phase 1. The documented CONDITIONAL baseline is accepted for continued development. Outstanding click-through, focus and mixed-DPI checks remain unverified, not PASS. See PHASE_1.md for the desktop foundation and its own acceptance checklist.
+
+
+## Coupled spring experiment (2026-11-13)
+
+The motion branch replaces single-stage Euler bending with exact damped spring stepping. A faster middle section drives a softer free edge; SVG edge control points follow the middle while the curl follows the trailing section. Native window position remains Windows-controlled. Smooth velocity saturation replaces abrupt target clamps. Native drag start resets timing and position samples. Random creation independently selects curl side and resting tilt, with a 25% straight outcome. Saved curl side defaults compatibly for older notes, and native geometry uses the explicit side.
+
+Build/typecheck and 11 tests pass. Tests include consistency across 30/60/144 Hz integration, randomized orientation boundaries and persistence of independent curl side. Visual fluidity, native click-through during motion and actual refresh-rate behavior remain NOT RUN by the agent. Compare slow dragging, abrupt reversal, off-center grabs, release, reduced motion and curl transitions on Windows before accepting the branch.

@@ -1,14 +1,14 @@
 export type Point = { x: number; y: number }
 export const SIZE = 360
 export const edge: Point[] = [[40,40],[320,40],[320,320],[40,320]].map(([x,y])=>({x,y}))
-export function polygon(angle:number):Point[] {
+export function polygon(angle:number,side:'left'|'right'=angle>0?'left':'right'):Point[] {
   const a=angle*Math.PI/180
   const curve=Array.from({length:13},(_,i)=>{
    const t=i/12,u=1-t
    return {x:u*u*u*320+3*u*u*t*305+3*u*t*t*282+t*t*t*255,y:u*u*u*265+3*u*u*t*283+3*u*t*t*312+t*t*t*320}
   })
   const outline=[{x:40,y:40},{x:320,y:40},...curve,{x:40,y:320}]
-  return outline.map(p=>({x:angle>0?360-p.x:p.x,y:p.y})).map(({x,y})=>({x:180+(x-180)*Math.cos(a)-(y-180)*Math.sin(a),y:180+(x-180)*Math.sin(a)+(y-180)*Math.cos(a)}))
+  return outline.map(p=>({x:side==='left'?360-p.x:p.x,y:p.y})).map(({x,y})=>({x:180+(x-180)*Math.cos(a)-(y-180)*Math.sin(a),y:180+(x-180)*Math.sin(a)+(y-180)*Math.cos(a)}))
 }
 export function contains(p:Point, points:Point[]):boolean {
   let inside=false
@@ -19,8 +19,8 @@ export function contains(p:Point, points:Point[]):boolean {
   return inside
 }
 // One-DIP scanlines; same rotated polygon as SVG. Padding reserves a shadow fringe.
-export function region(angle:number,padding=0){
-  const points=polygon(angle), rects:{x:number;y:number;width:number;height:number}[]=[]
+export function region(angle:number,padding=0,side?:'left'|'right'){
+  const points=polygon(angle,side), rects:{x:number;y:number;width:number;height:number}[]=[]
   for(let y=0;y<SIZE;y++){
     const xs:number[]=[]
     for(let i=0,j=points.length-1;i<points.length;j=i++){

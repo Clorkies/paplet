@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Config, Mode } from '../../shared/api'
 import { paperSurface } from '../../shared/paper'
-import { settleAngle } from '../../shared/motion'
+import { settleAngle, springStep } from '../../shared/motion'
 import './paper.css'
 function App(){
  const [config,setConfig]=useState<Config>(),[count,setCount]=useState(0),[point,setPoint]=useState(''),[debug,setDebug]=useState(false)
@@ -13,21 +13,23 @@ function App(){
  const checkOverflow=()=>{const el=editor.current;if(el)setOverflow({above:el.scrollTop>2,below:el.scrollHeight-el.clientHeight-el.scrollTop>2})}
  useEffect(()=>{if(!config||!editor.current)return;checkOverflow();const observer=new ResizeObserver(checkOverflow);observer.observe(editor.current);return()=>observer.disconnect()},[config?.note])
  const animation=useRef<Animation|null>(null)
- const curlSide:'left'|'right'=config?.angle&&config.angle>0?'left':'right'
+ const curlSide:'left'|'right'=config?.curlSide??'right'
  useEffect(()=>{
   if(!config)return
   let nativeDragging=false
+  let midX={position:0,velocity:0},midY={position:0,velocity:0},tailX={position:0,velocity:0},tailY={position:0,velocity:0}
   let side=curlSide,curlPhase=curlSide==='right'?1:-1,curlTarget=curlPhase,orientation=config.angle,orientationTarget=config.angle,angularVelocity=0
   let frame=0,last=0,x=0,y=0,vx=0,vy=0,tx=0,ty=0,grabX=180,grabY=65,moving=false
   let quiet:ReturnType<typeof setTimeout>|undefined
   const reduced=matchMedia('(prefers-reduced-motion: reduce)')
   const tick=(time:number)=>{
    const elapsed=(time-(last||time-16))/1000
-   const dt=Math.min(elapsed,.025);last=time
-   vx+=((tx-x)*85-vx*9)*dt;vy+=((ty-y)*105-vy*11)*dt
-   x+=vx*dt;y+=vy*dt
-   angularVelocity+=((orientationTarget-orientation)*100-angularVelocity*15)*dt
-   orientation+=angularVelocity*dt
+   last=time
+   midX=springStep(midX,tx,elapsed,19,.78);midY=springStep(midY,ty,elapsed,21,.8)
+   tailX=springStep(tailX,midX.position,elapsed,12,.63);tailY=springStep(tailY,midY.position,elapsed,14,.68)
+   x=tailX.position;y=tailY.position;vx=tailX.velocity;vy=tailY.velocity
+   const angular=springStep({position:orientation,velocity:angularVelocity},orientationTarget,elapsed,15,.85)
+   orientation=angular.position;angularVelocity=angular.velocity
    // Unroll to a flat corner before rolling up the other side. Signed
    // progress preserves continuity when the user reverses mid-transition.
    const difference=curlTarget-curlPhase
@@ -36,12 +38,12 @@ function App(){
    paper.current?.setAttribute('data-curl-side',side)
    const progress=Math.abs(curlPhase)
    const amount=progress*progress*(3-2*progress)
-   const shape=paperSurface(x,y,grabX,grabY,side,amount)
+   const shape=paperSurface(x,y,grabX,grabY,side,amount,midX.position,midY.position)
    surface.current?.setAttribute('d',shape.path)
    curl.current?.setAttribute('transform',shape.curlTransform)
-   if(content.current){content.current.style.transformOrigin=`${grabX-64}px ${grabY-53}px`;content.current.style.transform=`skewX(${x*.1}deg) rotate(${x*.035}deg)`}
+   if(content.current){content.current.style.transformOrigin=`${grabX-64}px ${grabY-53}px`;content.current.style.transform=`skewX(${midX.position*.07}deg) rotate(${midX.position*.025}deg)`}
    if(paper.current){paper.current.style.setProperty('--lift',String(Math.min(1,Math.abs(x)/5+Math.abs(y)/5)));paper.current.style.transform=`rotate(${orientation-x*.065}deg)`}
-   if(moving||Math.abs(curlTarget-curlPhase)>.001||Math.abs(x)+Math.abs(y)+Math.abs(vx)+Math.abs(vy)+Math.abs(orientationTarget-orientation)+Math.abs(angularVelocity)>.015)frame=requestAnimationFrame(tick)
+   if(moving||Math.abs(curlTarget-curlPhase)>.001||Math.abs(midX.velocity)+Math.abs(midY.velocity)+Math.abs(midX.position)+Math.abs(midY.position)+Math.abs(x)+Math.abs(y)+Math.abs(vx)+Math.abs(vy)+Math.abs(orientationTarget-orientation)+Math.abs(angularVelocity)>.015)frame=requestAnimationFrame(tick)
    else{frame=0;last=0;if(!nativeDragging)paper.current?.removeAttribute('data-dragging')}
   }
   const wake=()=>{if(!frame)frame=requestAnimationFrame(tick)}
@@ -57,7 +59,7 @@ function App(){
     paper.current!.style.transform=`rotate(${orientation}deg)`;return
    }
    grabX=motion.grabX;grabY=motion.grabY;moving=true
-   tx=Math.max(-8,Math.min(8,-motion.dx*.9));ty=Math.max(-6,Math.min(6,-motion.dy*.6))
+   tx=-8*Math.tanh(motion.dx/9);ty=-6*Math.tanh(motion.dy/10)
    clearTimeout(quiet);quiet=setTimeout(release,130);wake()
   })
   const offDrag=window.stickee.onDragState(dragging=>{
@@ -68,7 +70,7 @@ function App(){
   })
   const offSettle=window.stickee.onSettle(release)
   return()=>{offMotion();offSettle();offDrag();cancelAnimationFrame(frame);clearTimeout(quiet)}
- },[config?.angle])
+ },[config?.angle,config?.curlSide])
  useEffect(()=>{window.stickee.config().then(setConfig)},[])
  useEffect(()=>{if(config)editor.current?.focus()},[config?.note])
  useEffect(()=>{const stop=()=>{active.current=false;window.stickee.drag('end')};window.addEventListener('blur',stop);return()=>window.removeEventListener('blur',stop)},[])
