@@ -53,7 +53,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks: `npm run build` (includes strict typecheck) and `npm test`, **14 tests across 5 files passed**. Packaging, live shortcut collisions, mixed-DPI hardware and the latest native regression are **NOT RUN by the agent**. Detailed historical evidence is in [FEASIBILITY.md](FEASIBILITY.md).
+Latest executed checks: `npm run build` (includes strict typecheck) and `npm test`, **16 tests across 6 files passed**. Packaging, live shortcut collisions, mixed-DPI hardware and the latest native regression are **NOT RUN by the agent**. Detailed historical evidence is in [FEASIBILITY.md](FEASIBILITY.md).
 
 ## Phase 3B — main application direction
 
@@ -90,3 +90,7 @@ Automated build/typecheck and tests recorded for the branch; visual acceptance i
 Editor focus outlines and experiment bounds are suppressed only while dragging/settling; keyboard focus indicators return at rest. Native horizontal velocity (DIP per 16 ms, converted to DIP/second) drives an independent damped angular spring. Slow movement remains subtle; fast movement smoothly saturates at 6.5 degrees additional target tilt, with a 7-degree visual safety bound. Release returns the target to zero without resetting spring velocity, so reversal and recovery remain continuous. Reduced motion bypasses swing.
 
 Default shape mode temporarily uses a cached, nonrectangular union of rotated silhouettes during native drag and for 1.4 seconds after release. This accommodates larger visual tilt without per-frame region regeneration. It also broadens the interactive transparent fringe during that interval. Tight mode remains a clipping diagnostic; ignore mode retains its existing static-polygon limitations. Manual checks needed: focused editor drag (no dashed rectangle), slow/fast sweeps, rapid reversal, release, corners/shadows at maximum tilt, regrab during settling, and restored keyboard focus outlines. Actual Windows GUI verification remains NOT RUN by agent.
+
+## Drag focus and audio experiment (2026-11-13)
+
+Implemented explicit editor activation, a full-width top grab strip including both corners, and a speed-responsive synthesized swoosh with a per-note session mute toggle. Audio resources are created lazily, reused and suspended at idle. Automated audio lifecycle checks pass; listening, caret behavior and real CPU/memory measurements remain pending. See the latest [feasibility entry](FEASIBILITY.md) and [manual checks](PHASE_1.md). This remains on the motion experiment branch.

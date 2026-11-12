@@ -36,3 +36,10 @@ textarea::-webkit-scrollbar{display:none;width:0;height:0}
    while the native drag or its decorative settling is in progress. */
 .paper[data-dragging] :focus-visible{outline:none!important}
 .bounds:has(.paper[data-dragging]){outline:none}
+
+/* The grab strip belongs to the paper, outside the moving editor contents. */
+.paper>.grab{position:absolute;left:40px;top:40px;width:280px;height:52px;z-index:2;align-items:center}
+.content{top:92px;height:220px}
+.note-actions{top:198px;gap:12px}
+.paper:focus{outline:none}
+.paper[data-dragging] textarea{caret-color:transparent}

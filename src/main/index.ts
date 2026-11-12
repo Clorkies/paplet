@@ -39,7 +39,7 @@ function recover(){for(const {win} of notes.values()){const b=win.getBounds(),ar
 async function createWindow(record:SavedNote,focus=false){
  const {note}=record,area=screen.getDisplayMatching({x:record.x,y:record.y,width:SIZE,height:SIZE}).workArea
  const p=clampPosition(record,area);record.x=p.x;record.y=p.y
-  const win=new BrowserWindow({...p,width:SIZE,height:SIZE,frame:false,transparent:true,thickFrame:false,skipTaskbar:true,backgroundColor:'#00000000',hasShadow:false,resizable:false,maximizable:false,fullscreenable:false,show:false,alwaysOnTop:true,webPreferences:{preload:join(__dirname,'../preload/index.js'),sandbox:true,contextIsolation:true,nodeIntegration:false}})
+  const win=new BrowserWindow({...p,width:SIZE,height:SIZE,frame:false,transparent:true,thickFrame:false,skipTaskbar:true,backgroundColor:'#00000000',hasShadow:false,resizable:false,maximizable:false,fullscreenable:false,show:false,alwaysOnTop:true,webPreferences:{preload:join(__dirname,'../preload/index.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,autoplayPolicy:'no-user-gesture-required'}})
   const config:Config={curlSide:record.curlSide??(record.angle>0?'left':'right'),text:record.text,note,angle:record.angle,mode:'shape',nativeDrag:true,status:''}
   try{config.status=platform.apply(win,config.angle,config.mode,config.curlSide)}catch(error){config.status=`FAILED: ${String(error)}`}
   const id=win.webContents.id

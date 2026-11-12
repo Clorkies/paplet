@@ -43,3 +43,16 @@ User reported: launch, Alt+Tab to a background app, click that app, then click a
 Native WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE notifications now hide action/experiment controls through a full drag, including pauses while holding the mouse. Renderer settling completion reveals them with a fade. Action placement follows the flat corner opposite the currently drawn curl; controls stay hidden while it flips. Reduced motion reveals controls immediately on drag end. Manual movement comparison also hides New/Hide during pointer capture.
 
 Build/typecheck and 8 existing tests passed. Required manual regression: repeat the user's Alt+Tab sequence at least 20 times with Notepad and a browser; notes must stay visible, editable, and topmost without taking focus from the other app until deliberately clicked. Check tray Show All, restored notes, independent overlap ordering, and that deliberate Hide remains hidden. During dragging, pause with the mouse held: actions must remain hidden. Release after reversing curl direction: actions fade into the opposite corner and remain keyboard-accessible. This native regression is NOT RUN by the agent.
+
+## Explicit editing, corner grab and sound checks
+
+The latest user preference supersedes earlier immediate-typing behavior: new notes wait for an editor click or keyboard focus.
+
+- Create a note, drag from the center top and both top corners, and release. No caret should appear; typing before deliberately focusing the editor must not change text.
+- Click the editor, type/select text, then drag by the top strip. Confirm the caret disappears and typing after release does not edit until the editor is focused again. Check Tab navigation and autosave on blur.
+- Confirm text selection still works inside the editor and the enlarged grab strip does not intercept it. Repeat with both curl sides and rotated notes.
+- With Sound on, compare slow/fast drags and direction reversals. Sound should swell smoothly, fade during a pause while holding the mouse, resume on movement and stop on release or Alt+Tab. Listen for clicks, excessive loudness or unwanted looping artifacts.
+- Mute, drag again, then re-enable. Confirm silence when muted. The toggle is per note and resets when its renderer is recreated.
+- Compare Electron CPU/memory at idle and during repeated drags with audio enabled and muted, including ten used notes. Confirm idle usage returns to baseline; record measured values before making performance claims.
+
+These GUI, listening and resource checks are NOT RUN by the agent. Automated build/typecheck and all 16 tests passed, including two mocked audio lifecycle tests.
