@@ -28,3 +28,13 @@
 @media(max-width:900px){.sets-bar{padding-inline:22px;gap:12px}.set-folio{flex-basis:132px}.all-folio{flex-basis:100px}.new-set-button{font-size:11px;padding-inline:8px}.set-actions{gap:2px}.shelf-heading h1{font-size:21px}.set-actions>button:not(.icon-button){padding:7px;font-size:11px}.shortcut-recorder{max-width:100%}}
 @media(max-width:650px){.sets-bar{padding-inline:16px}.sound-options{grid-template-columns:1fr}.shortcut-setting{display:block}.shortcut-recorder{margin-top:14px}.shelf-heading{align-items:flex-start}.set-actions>button:not(.icon-button){font-size:12px}.set-dialog{padding:20px}}
 @media(forced-colors:active){.set-folio.active{outline:2px solid Highlight}.folio-colours i{border:1px solid CanvasText}.set-dialog{border:2px solid CanvasText}.sound-options label.selected{outline:2px solid Highlight}}
+
+/* Fieldset legends must not float alongside their own control rows. */
+.preferences{min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto}
+.preferences form{width:100%;min-width:0}
+.preferences .colour-setting legend,.preferences .sound-setting legend{float:none;width:auto;max-width:100%;display:block}
+.preferences .colour-options{clear:both;width:100%;min-width:0;display:flex;flex-wrap:wrap;gap:9px}
+.preferences .colour-setting,.preferences .sound-setting{min-width:0;max-width:100%}
+.preferences .sound-options{min-width:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+.preferences .setting-row{max-width:100%}
+@media(max-width:650px){.preferences .sound-options{grid-template-columns:minmax(0,1fr)}}

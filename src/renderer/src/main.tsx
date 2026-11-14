@@ -121,6 +121,7 @@ function App(){
   return()=>{offMotion();offSettle();offDrag();cancelAnimationFrame(frame);clearTimeout(quiet)}
  },[config?.angle,config?.curlSide])
  useEffect(()=>{window.stickee.config().then(initial=>{setColor(initial.color);sound.current?.configure(initial.sound,initial.soundStyle);setConfig(initial)})},[])
+ useEffect(()=>{if(config)window.stickee.ready()},[!!config])
  useEffect(()=>{const stop=()=>{active.current=false;window.stickee.drag('end')};window.addEventListener('blur',stop);return()=>window.removeEventListener('blur',stop)},[])
  if(new URLSearchParams(location.search).has('panel'))return <main className="panel" onPointerDown={e=>{setCount(c=>c+1);setPoint(`${e.clientX}, ${e.clientY}`)}}><small>STICKEE / NATIVE WINDOW LAB</small><h1>Paper above.<br/>Desktop below.</h1><p>Click through the transparent corners of either note.<br/>This counter must advance when the background receives input.</p><output>{count} background presses</output><p>Last position: {point||'—'}</p><p>Move notes over this grid, then over Notepad. Close this window to quit.<br/>Notes are temporary: text is discarded on exit.</p><button onClick={()=>window.stickee.quit()}>Quit prototype</button></main>
  if(!config)return null

@@ -147,3 +147,25 @@ User requested stopping after these features and committing/pushing this session
 Do not infer future push/merge authorization from this session. Formatting,
 drawing and optional paper sizes are not started. Next work requires new scope;
 the combined native acceptance matrix remains pending.
+
+## Latest continuation — settings and note presentation fixes (2026-11-15)
+
+User supplied a Preferences screenshot with clipped labels, horizontal overflow
+and a vertical paper-colour column. Removed floated fieldset legends, constrained
+the form to its scrollport and restored wrapping colour controls.
+
+The user explicitly authorized presentation changes: opening hidden notes from
+the manager reuses the creation entrance, Hide slides down, and manager New note
+targets the center of the manager display. Tray/shortcut creation stays near the
+pointer. Existing visible notes are focused without re-showing/replaying. A first
+paint plus React-ready handshake protects against showing empty content. Quick
+reopen during Hide resumes from the current position/opacity. Hide persists state
+before animation and retains destination coordinates. Reduced motion bypasses
+travel; quit, destruction and display changes stop transition timers safely.
+
+This is specific user authorization for visibility/placement changes, not a lift
+of the freeze on approved drag physics. Bending, pinch, swing, curl and settling
+remain unchanged. Build/typecheck and 61 automated tests pass; actual native
+flicker, compositor smoothness and visual Preferences acceptance are NOT RUN by
+the agent. Review in the morning. Commit/push to feat/note-manager is authorized;
+existing PR #3 targets dev, alongside PR #1 (paper) and #2 (core). Do not merge.

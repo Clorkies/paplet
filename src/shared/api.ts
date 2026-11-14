@@ -7,6 +7,7 @@ export type NoteState={color:PaperColor;sound:boolean;soundStyle:SoundStyle}
 /** Native drag sample. Velocity is DIP/second; grab is window-relative DIP. */
 export type Motion={vx:number;vy:number;grabX:number;grabY:number;angle:number;curlSide:'left'|'right'}
 export interface StickeeAPI {
+ ready():void
  config():Promise<Config>
  text(value:string,flush?:boolean):void
  create():void

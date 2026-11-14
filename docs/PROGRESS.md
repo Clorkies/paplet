@@ -58,7 +58,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks (2026-11-15): production build/typecheck PASS; 56 tests across 14 files PASS. GUI, actual listening, OS input timing, hardware, performance and packaging acceptance remain NOT RUN.
+Latest executed checks (2026-11-15): production build/typecheck PASS; 61 tests across 15 files PASS. GUI, listening, hardware, compositor and performance acceptance remain NOT RUN.
 
 ## Phase 3B — main application direction
 
@@ -315,3 +315,26 @@ Source comparisons confirm native paper motion/entrance, renderer dynamics,
 flow/sheet/geometry modules and original rustle engine are unchanged. The user
 authorized committing/pushing at this stop point. dev originates at main
 `161893e`; all feature PRs target dev. No merge or release is authorized/performed.
+
+## Settings overflow and visibility transitions (2026-11-15)
+
+User reported screenshot evidence of Preferences overflow and native flicker on
+manager double-click. Source review identified floated full-width legends pushing
+controls beyond the scrollport; those floats are removed and the form/colour and
+sound grids constrained. No claim of native visual reproduction by the agent.
+
+User explicitly requested manager-open entrance reuse, slide-down Hide and centered
+manager creation. Implemented readiness-gated opening, idempotent show/focus,
+reused entrance spring/velocity samples, interruptible downward exit and central
+work-area positioning. Exit/entrance positions are transient; saved destinations
+survive hide, quick reopen and quit. Save failures leave visibility unchanged.
+Display changes settle/cancel transitions before recovering bounds. Reduced
+motion skips travel. Normal dragging can interrupt a hide; other approved native
+drag/deformation behavior is preserved.
+
+Production build/typecheck PASS; 61 tests across 15 files PASS. New tests cover
+paint/readiness gating, concurrent opens, interrupted exits, destroyed windows,
+bounded/faded exit samples and work-area centering. Source comparisons preserve
+renderer dynamics and flow/sheet/motion/geometry/audio modules. Actual Preferences
+layout, reported native flicker remediation, input routing and transition quality
+remain NOT RUN/acceptance pending. Commit/push authorized; no merge performed.
