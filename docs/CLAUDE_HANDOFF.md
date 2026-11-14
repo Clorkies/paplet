@@ -290,3 +290,13 @@ Our creative standard is “this looks like an Apple application”: exceptional
 
 Use the handoff roadmap for subsequent work: finish Phase 2, establish Phase 3 reliability, then build a creative paper-collection/desk-drawer main manager for visible/hidden notes and settings—not a generic dashboard. Keep shared main-process state, secure defaults and minimal dependencies. No cloud/accounts or fullscreen overlay. Implement functioning files, run appropriate checks, update the tracker, and distinguish real Windows GUI/audio/performance verification from automated tests. Work in coherent milestones; do not rush through every phase or claim unrun checks passed. Do not merge, push or publish without my authorization. Start implementing the focused paper-motion improvement now.
 ```
+
+
+## Latest user sequencing update - 2026-11-15
+
+The user moved comprehensive QA after Phase 3B to avoid repeated acceptance
+sessions. This supersedes earlier instructions to block manager work on the
+native matrix. Phase 3B is implemented on `feat/note-manager`; use the latest
+PROGRESS.md and NEXT_SESSION.md entries plus MANAGER_DESIGN.md. Desktop animation
+remains frozen and unchanged. Combined GUI/audio/accessibility/display/performance
+acceptance is still NOT RUN; focused build/typecheck and 42 automated tests pass.

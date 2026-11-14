@@ -426,3 +426,13 @@ Visual polish cannot excuse broken click-through, input focus, persistence, keyb
 ## Later product direction ? user clarification
 
 A future main Stickee window may manage both visible and hidden notes and provide general settings. Potential user-profile support is a future exploration, not authorization for accounts, authentication, sync, or cloud services in the current MVP. Keep note state owned by the main process so a later manager can operate on the same notes without coupling independent paper windows to a dashboard. Current priority remains reliable sticky-note interaction and persistence. Do not implement the manager or profiles as part of the current core fixes.
+
+
+## Sequencing update - user direction, 2026-11-15
+
+Comprehensive native Windows, audio, accessibility, display lifecycle and resource
+QA is consolidated after Phase 3B. Pending acceptance no longer blocks manager
+implementation. Retain focused implementation build/type checks and honest NOT RUN
+status for deferred acceptance. Approved paper animation must remain unchanged
+unless the user explicitly requests a specific modification. Phase 3B implementation
+is tracked on `feat/note-manager`; see the latest docs/PROGRESS.md entry.

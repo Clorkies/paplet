@@ -1,6 +1,8 @@
 # Windows acceptance matrix
 
-Updated 2026-11-14. This session ran automated checks only. No GUI, listening,
+Updated 2026-11-15. Per user direction, execute one consolidated acceptance pass
+after Phase 3B; pending QA does not block manager implementation. Only automated
+checks have run for the manager milestone. No GUI, listening,
 screen-reader, compositor, hardware lifecycle or resource measurements were run.
 The approved paper animation is frozen; verification is not permission to tune it.
 Use disposable user data and record Windows version, display topology, scaling,
@@ -22,6 +24,12 @@ refresh rate, revision and evidence when executing these checks.
 | Audio | Toggle sound from tray/context; listen during slow/fast drag, held pause, reversal, hide/delete and quit. Muting stops output; no clicks/seams. | Mock lifecycle tests only; listening NOT RUN |
 | Displays | 100/125/150/200%, mixed DPI, negative coordinates, taskbar/resolution changes, disconnect/reconnect, lock/unlock and sleep/wake. Verify reachable placement, text and input alignment. | NOT RUN |
 | Packaged app | Repeat tray/shortcut/restart checks using unpacked executable independently of dev mode. | NOT RUN |
+| Manager lifecycle | Normal start, tray Open, tray double-click and second launch open/focus one ordinary manager. Close it: notes/tray/shortcut still work. Reopen without duplicates. | Mocked lifecycle checks PASS; GUI NOT RUN |
+| Collection / state | Create/edit/hide/show/trash from desktop and manager; search complete text including hidden notes, filter states, select previews and read long content. Verify immediate shared updates and no divergent edits. | Implementation/build only; GUI NOT RUN |
+| Manager recovery | Bring a hidden/off-screen note to the pointer display, including negative coordinates. Recovery during entrance reports a retry rather than interrupting approved motion. | NOT RUN |
+| Preferences | Save sound/default colour/shortcut, restart. Reserve the requested shortcut elsewhere: old shortcut stays usable and error appears. Simulate failed disk writes: old settings remain. | Validation/persistence tests PASS; OS registration/GUI NOT RUN |
+| Permanent deletion | Trash a disposable note, cancel permanent deletion, then confirm. Restart: removed from collection; unrelated notes remain. Disk failure must roll back removal. | Implementation/build only; native confirmation NOT RUN |
+| Manager accessibility / design | Keyboard-only search/filter/select/show/hide/trash/restore/preferences, system zoom, Narrator, light/dark/high contrast, empty/dense/long-content states. | NOT RUN |
 
 ## Resource profiling protocol (not yet measured)
 
@@ -37,11 +45,13 @@ trash save; confirm their renderer processes/resources are released in practice.
 
 ## Trash policy
 
-Schema 3 retains deleted notes indefinitely with `deletedAt`; no automatic expiry
-or permanent-delete UI exists in this milestone. Tray Undo restores the latest
+Schema 3 retains deleted notes indefinitely with `deletedAt`; no automatic expiry.
+Phase 3B adds permanent deletion from the manager's Trash with native confirmation
+and Cancel as default. This is not secure erasure; backups can contain older data.
+Tray Undo restores the latest
 remaining trash entry, including across restart; Trash restores an individual
 entry. Restore explicitly shows the note, preserving its content and appearance;
 placement is recovered to a current work area when its new window opens. A
 failed save rolls back deletion state before native visibility changes. Older
 schema 1/2 files migrate with backups preserved; older app versions cannot read
-schema 3. Permanent deletion and manager trash controls remain later work.
+schema 3. Manager trash uses the same state and restore semantics.

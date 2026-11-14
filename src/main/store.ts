@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, copyFileSync, openSync, fsyncSync, closeSync } from 'node:fs'
 import { join } from 'node:path'
 import { isPaperColor, legacyColor, type PaperColor } from '../shared/palette'
+import { validShortcut } from '../shared/settings'
 export const SCHEMA_VERSION=3
 export type SavedNote={curlSide?:'left'|'right';id:string;text:string;color:PaperColor;angle:number;x:number;y:number;hidden:boolean;deletedAt?:number}
-export type Settings={sound:boolean}
+export type Settings={sound:boolean;defaultColor?:PaperColor;shortcut?:string}
 export type SavedData={schemaVersion:3;notes:SavedNote[];settings:Settings}
 export const emptyData=():SavedData=>({schemaVersion:3,notes:[],settings:{sound:true}})
 /** Validates current data and migrates schemas 1 (numeric paper variant) and 2 (no trash). */
@@ -19,7 +20,8 @@ export function parseData(raw:string):SavedData {
   return {...(data.schemaVersion===3&&n.deletedAt!==undefined?{deletedAt:n.deletedAt as number}:{}),...(n.curlSide?{curlSide:n.curlSide}:{}),id:n.id,text:n.text,color,angle:n.angle,x:n.x,y:n.y,hidden:n.hidden}
  })
  if(!legacy&&(!data.settings||typeof data.settings.sound!=='boolean'))throw new Error('Invalid settings')
- return {schemaVersion:3,notes,settings:{sound:legacy?true:data.settings.sound}}
+ if(!legacy&&((data.settings.defaultColor!==undefined&&!isPaperColor(data.settings.defaultColor))||(data.settings.shortcut!==undefined&&!validShortcut(data.settings.shortcut))))throw new Error('Invalid settings')
+ return {schemaVersion:3,notes,settings:{sound:legacy?true:data.settings.sound,...(!legacy&&data.settings.defaultColor!==undefined?{defaultColor:data.settings.defaultColor}:{}),...(!legacy&&data.settings.shortcut!==undefined?{shortcut:data.settings.shortcut}:{})}}
 }
 export class NoteStore {
  readonly path:string

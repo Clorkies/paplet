@@ -39,15 +39,19 @@ The aim is simple: **paper that feels light in your hand and quiet on your scree
 
 | | |
 | --- | --- |
-| **Capture a thought** | Create a blank note with **Ctrl+Alt+N**, from the tray, or from another note. |
+| **Capture a thought** | Create a blank note with **Ctrl+Alt+N** (configurable), from the tray, or from another note. |
 | **Put it where it belongs** | Move independent, frameless notes around your desktop and overlap them naturally. |
 | **Keep writing** | Edit plain, multiline text with selection, copy, paste, and scrolling. |
+| **Find a thought** | Search and browse visible, hidden and trashed notes in the main Stickee window. |
+| **Make it yours** | Choose a default paper colour, drag sound and create shortcut in Preferences. |
+| **Keep a way back** | Move notes to Trash, undo or restore later. Permanent deletion asks for confirmation. |
 | **Clear some space** | Hide a note or hide them all. Bring them back through the tray when you need them. |
 | **Pick up where you left off** | Local autosave preserves text, placement, orientation, and visibility across restarts. |
 | **Keep the desktop accessible** | Shaped native windows allow input outside their paper region to reach the application beneath. A small shadow fringe remains interactive. |
 
 ### A few small gestures
 
+- **Tray > Open Stickee** - open your note collection. Closing it keeps desktop notes running.
 - **Ctrl+Alt+N** — a fresh note near your pointer.
 - **Grab the top edge** — move the paper without disturbing text selection.
 - **Hover or focus** — reveal New and Hide controls.
@@ -66,13 +70,13 @@ The first priority is getting the everyday paper experience right: reliable visi
 
 | Next | Direction |
 | --- | --- |
-| **Refine the paper** | A gentle note entrance, a curated color palette, and further motion tuning. |
+| **Preserve the paper** | The approved motion, entrance and curated palette stay intact. |
 | **Make it dependable** | Broader Windows testing across focus changes, overlapping windows, displays, and scaling; accessibility and reversible deletion. |
-| **Give notes a home** | A main Stickee app to find and manage visible and hidden notes, recover misplaced notes, and adjust general settings. Desktop notes will remain independently usable. |
+| **Polish the collection** | The main app is implemented; review its design and everyday behavior with the complete Windows acceptance pass. |
 | **Prepare for release** | Packaging, distribution, and testing the installed Windows experience. |
 | **Explore further** | Separate macOS feasibility work and a later decision about whether user profiles would be useful. |
 
-The manager app, settings interface, profiles, and macOS support are **planned or exploratory**, not current features. Accounts and sync are outside the current scope.
+The manager and preferences are implemented, with native acceptance pending. Profiles and macOS support remain **planned or exploratory**. Accounts and sync are outside the current scope.
 
 ## Still taking shape
 

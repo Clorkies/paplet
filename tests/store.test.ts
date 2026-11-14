@@ -47,3 +47,10 @@ it('migrates schema 2 without inventing trash or losing settings and backs it up
  store.save(loaded)
  expect(JSON.parse(readFileSync(store.path+'.bak','utf8'))).toEqual(old)
 })
+it('preserves manager preferences and rejects invalid shortcuts and defaults',()=>{
+ const store=setup(),state={...data,settings:{sound:false,defaultColor:'blue' as const,shortcut:'Control+Shift+F12'}}
+ store.save(state);expect(store.load()).toEqual(state)
+ for(const shortcut of ['N','Shift+N','Control+Control+N','Control+Alt+','Control+Delete'])expect(()=>store.save({...state,settings:{...state.settings,shortcut}})).toThrow('Invalid settings')
+ expect(()=>store.save({...state,settings:{...state.settings,defaultColor:'red' as never}})).toThrow('Invalid settings')
+ expect(store.load()).toEqual(state)
+})

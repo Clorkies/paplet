@@ -2,9 +2,9 @@
 
 # Stickee progress tracker
 
-Last updated: 2026-11-14. Pinned-sheet paper flow (accepted by the user) and the remaining Phase 2 work are implemented on `improve/paper-motion`, uncommitted at time of writing; see the final two sections.
+Last updated: 2026-11-15. Phase 3B manager is implemented on `feat/note-manager`; consolidated Windows acceptance follows this milestone per user direction.
 
-**Current position:** Phase 1 is implemented with native Windows acceptance pending. Parts of Phase 2 were developed early to establish the paper interaction. The user accepted the current look and motion; this does not certify every native-window test.
+**Current position:** Phase 3B manager is implemented. The user moved comprehensive Windows/audio/accessibility/display/performance acceptance after this milestone. Phase 3 reliability still has pending lifecycle work; the approved paper animation remains unchanged.
 
 The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This tracker records completion and remaining work. Update it alongside implementation changes and keep automated checks separate from manual Windows results.
 
@@ -15,8 +15,8 @@ The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This
 | 0 — Native window and interaction feasibility | **Accepted conditional baseline** | Independent transparent windows, shaped hit regions, overlap prototype and dragging implemented. Appearance/motion accepted by user. DPI, click-through and focus matrix remains partly unverified. |
 | 1 — Desktop foundation | **Implemented; acceptance pending** | Create shortcut, tray, independent notes, hide/show, single instance, versioned local saves and restart restoration implemented. Windows end-to-end restart and latest topmost regression need verification. |
 | 2 — Tactile paper and motion | **Implemented; native acceptance pending** | Pinned-sheet flow, directional curl, creation entrance, five-colour palette with picker, persistent sound preference and diagnostics moved out of ordinary notes. Native visual acceptance of the entrance, performance profiling and live geometry validation remain. |
-| 3 — Reliability, ergonomics and accessibility | **Planned; some groundwork done** | Persistence tests, work-area recovery and basic keyboard editing exist. Complete DPI/display/suspend tests, focus/IME/accessibility checks, reversible deletion/undo, and resource profiling. |
-| 3B — Main application / note manager | **Planned after core notes are reliable** | Manage visible and hidden notes through the same main-process state; provide general settings. Detailed scope below. |
+| 3 - Reliability, ergonomics and accessibility | **In progress; acceptance deferred** | Durable trash/undo and picker keyboard access implemented. Display/suspend hardening, full input/accessibility and resource profiling remain. |
+| 3B - Main application / note manager | **Implemented; combined acceptance pending** | Search/filter/read notes, desktop visibility/recovery, shared trash/undo/permanent deletion, sound/default colour/shortcut preferences. |
 | 4 — Packaging and beta readiness | **Planned** | Unpacked build command configured only. Installer, packaged smoke tests, icons/branding, guide and release readiness remain. |
 | 5 — macOS feasibility | **Deferred** | Separate native hit-testing/window activation investigation required. Current app does not claim macOS support. |
 | 6 — Optional profiles exploration | **Future consideration only** | Decide whether profiles are useful and whether they are local-only. Accounts, authentication and sync are not implemented or authorized by this milestone. |
@@ -56,7 +56,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks (2026-11-14): `npm run build` (includes strict typecheck) and `npm test`, **32 tests across 8 files passed**. Packaging, live shortcut collisions, mixed-DPI hardware and the latest native regression are **NOT RUN by the agent**. Detailed historical evidence is in [FEASIBILITY.md](FEASIBILITY.md).
+Latest executed checks (2026-11-15): production build/typecheck PASS; 42 tests across 10 files PASS. GUI, audio, Narrator, display hardware, performance and packaging acceptance remain NOT RUN. See the latest milestone entry and MANUAL_TEST_MATRIX.md.
 
 ## Phase 3B — main application direction
 
@@ -69,7 +69,7 @@ The future main app should be a quiet control center for the existing notes:
 - Keep independent desktop notes usable when the manager window is closed; opening a manager must not create a fullscreen overlay or replace individual note windows.
 - Include deletion only with the shared undo/trash behavior established in Phase 3.
 
-No manager UI or settings screen has been built yet. Profile support is a separate future decision; do not add login, cloud dependencies or sync speculatively.
+The manager UI and settings are now implemented; see the latest Phase 3B entry and `MANAGER_DESIGN.md`. Profile support is a separate future decision; do not add login, cloud dependencies or sync speculatively.
 
 ## Resume here
 
@@ -156,7 +156,7 @@ Known tradeoffs: for the first fraction of a second the rising note can overlap 
 Remaining before Phase 2 can be called accepted: watch the entrance and try the picker, context menu and tray on Windows. Next roadmap item is Phase 3 (reversible deletion, display lifecycle, accessibility, profiling).
 
 
-## Phase 3 ? durable trash and keyboard access (2026-11-14)
+## Phase 3 - durable trash and keyboard access (2026-11-14)
 
 Preserved the pre-existing local documentation updates and the approved animation.
 No motion dynamics, pinch, swing, curl, settling, entrance tuning, native drag
@@ -188,3 +188,45 @@ recovery (including entrance/topology interaction), IME/accessibility verificati
 and actual resource profiling. Do not alter approved animation to resolve a
 verification concern without the user's specific direction. Phase 3B manager is
 not started; permanent deletion remains deferred. No merge, push or publication.
+
+## Phase 3B - paper collection and preferences (2026-11-15)
+
+The user explicitly moved comprehensive QA after Phase 3B. Do not treat pending
+GUI/audio/display/accessibility/performance tests as a gate to manager work.
+Core display lifecycle hardening remains outstanding where not already handled;
+its acceptance is part of the combined pass, not a completed claim.
+
+Created `feat/note-manager` from `feat/core-reliability` for this milestone. The
+manager is an ordinary resizable native window with a separate sandboxed preload.
+Normal startup, tray Open, tray double-click and second launch open/focus one
+instance. Closing it leaves desktop notes, global shortcut and tray usable.
+
+Implemented:
+
+- Paper-coloured text previews, All / On screen / Hidden / Trash, complete-text
+  local search, keyboard navigation and a scrollable full-text reading pane.
+- Create, show/focus, hide, show/hide all and bring a note to the current display.
+  Editing explicitly opens the independent desktop note; no second editable copy.
+- Shared durable trash/restore, inline Undo and permanent deletion from Trash with
+  native Cancel-default confirmation. No automatic expiration. Backups can retain
+  older data; permanent deletion does not imply secure erasure.
+- Persisted sound, default paper and configurable create shortcut. Register a new
+  shortcut before releasing the old one; reject conflicts and roll back settings
+  on failed save. Notes created from another note still inherit its paper colour.
+- Storage path and backup explanation, light/dark styling, forced-colour rules,
+  focus indicators and manager zoom support. No new dependencies or remote assets.
+- Manager-only IPC sender/main-frame validation, serialized actions and coalesced
+  main-owned snapshots. No per-frame polling and no second database.
+
+Approved motion preserved: native movement/entrance block compared byte-for-byte
+with the prior milestone and matched. Desktop renderer, dynamics, sheet geometry,
+resting/movement regions, paper CSS and audio engine unchanged in this milestone.
+No custom motion override was introduced. Recovery requested mid-entrance reports
+a retry rather than changing its behavior.
+
+Production build/typecheck PASS; 42 automated tests across 10 files PASS, including
+manager IPC authorization, action serialization, single-window reuse/coalesced
+events, and preference persistence/validation. No actual GUI, listening, Narrator,
+mixed-DPI/lifecycle hardware or CPU/memory/frame measurements were run. These
+remain NOT RUN in `MANUAL_TEST_MATRIX.md`. Design rationale in `MANAGER_DESIGN.md`.
+No merge, push, publish or packaging/release performed.

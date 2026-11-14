@@ -6,7 +6,7 @@ Prepared 2026-11-14 after reviewing Claude's working tree.
 
 ## Start here
 
-Repository: `F:\Projects\Stickee`. Branch: `improve/paper-motion`. Phase 2 has been implemented and is being checkpointed on this branch; do not assume main contains it. Inspect `git status` and latest log before editing. Preserve any existing changes.
+Repository: `F:\Projects\Stickee`. Branch: `feat/note-manager` (Phase 3B; Phase 2 remains on `improve/paper-motion`). Phase 2 and Phase 3B are implemented; the latest section below supersedes historical snapshots; do not assume main contains it. Inspect `git status` and latest log before editing. Preserve any existing changes.
 
 Read the entire `STICKEE_IMPLEMENTATION_PLAN.md`, `docs/PROGRESS.md`, `docs/FEASIBILITY.md`, `docs/PHASE_1.md`, and `docs/CLAUDE_HANDOFF.md`. The latter is a comprehensive roadmap but its opening snapshot predates Claude's Phase 2 implementation. Use the latest progress entries, actual code and this handoff for current status.
 
@@ -61,7 +61,7 @@ Use author AND committer `Clorkies <clarkisnoob434@gmail.com>`, concise messages
 Continue Stickee from `improve/paper-motion`. Read `docs/NEXT_SESSION.md` and all referenced specifications, inspect the actual repo, and preserve existing work. Phase 2 code is implemented and its build/typecheck plus 32 tests pass, but native Windows acceptance remains pending. The paper animation is approved as ABSOLUTELY AMAZING: do not change it unless the user explicitly requests specific modifications. First review the current milestone and resolve reproduced core regressions without altering the approved animation, then implement Phase 3 reliability in coherent increments: reversible delete/undo, display lifecycle, accessibility and profiling. Keep Apple-quality craft, native responsiveness, click-through, explicit editing and local-first persistence. The creative main manager is Phase 3B after core reliability. Update progress and distinguish actual GUI/audio/performance evidence from unit tests. Use infrequent milestone commits, not a commit per small edit. Do not merge, push or publish without authorization for the new work.
 
 
-## Latest continuation ? Phase 3 trash milestone (2026-11-14)
+## Latest continuation - Phase 3 trash milestone (2026-11-14)
 
 This section supersedes the earlier next-step snapshot. Phase 2 remains unchanged
 and native acceptance pending. Phase 3 now includes schema 3 persistent trash,
@@ -76,3 +76,23 @@ GUI/audio/performance checks. Display lifecycle, full accessibility/IME and actu
 profiling remain next. Phase 3B manager remains unimplemented. Preserve the
 approved animation exactly; newer native verification is not permission to
 change it. No new push/merge/publication authorization exists.
+
+
+## Latest continuation - Phase 3B implemented (2026-11-15)
+
+Current branch: `feat/note-manager`, created from `feat/core-reliability`. The user
+explicitly deferred comprehensive QA until after Phase 3B; the previous native
+acceptance gate is superseded for development sequencing. The manager is now
+implemented. Read docs/MANAGER_DESIGN.md and the latest docs/PROGRESS.md entry.
+
+Startup/tray Open/tray double-click/second launch open one native manager. It has
+search, visibility filters, actual paper previews, complete read-only text,
+show/focus/hide/recovery, shared trash/restore/undo and confirmed permanent delete.
+Preferences persist sound/default paper/create shortcut, with conflict handling
+and save rollback. Closing the manager leaves desktop notes/tray running.
+
+Build/typecheck and 42 tests pass. Actual GUI/audio/display/accessibility/resource
+checks remain NOT RUN. Next: perform the consolidated matrix when requested,
+resolve demonstrated reliability/design issues while keeping the approved paper
+animation frozen. Display/suspend lifecycle hardening is not certified complete.
+Do not push, merge or publish without authorization.
