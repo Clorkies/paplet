@@ -6,7 +6,7 @@ vi.mock('electron',()=>({
  Menu:{buildFromTemplate:(template:unknown)=>template},
  ipcMain:{handle:(name:string,handler:Function)=>mock.handlers.set(name,handler)},
  BrowserWindow:class{
-  webContents={mainFrame:{},isLoadingMainFrame:()=>false,send:vi.fn()}
+  webContents={mainFrame:{},isLoadingMainFrame:()=>false,send:vi.fn(),on:vi.fn(),setIgnoreMenuShortcuts:vi.fn()}
   show=vi.fn();focus=vi.fn();restore=vi.fn();setMenu=vi.fn();loadFile=vi.fn().mockResolvedValue(undefined);loadURL=vi.fn().mockResolvedValue(undefined)
   events=new Map<string,Function>();destroyed=false
   constructor(public options:unknown){mock.windows.push(this)}
@@ -16,7 +16,7 @@ vi.mock('electron',()=>({
  }
 }))
 import { createManager } from '../src/main/manager'
-const snapshot=():ManagerSnapshot=>({revision:0,notes:[],settings:{sound:true,defaultColor:'yellow',shortcut:'Control+Alt+N'},storagePath:'test/notes.json',saveError:false})
+const snapshot=():ManagerSnapshot=>({revision:0,notes:[],sets:[],settings:{sound:true,soundStyle:'rustle',defaultColor:'yellow',shortcut:'Control+Alt+N'},storagePath:'test/notes.json',saveError:false})
 beforeEach(()=>{mock.handlers.clear();mock.windows.length=0;vi.useFakeTimers()})
 afterEach(()=>vi.useRealTimers())
 it('rejects another renderer and manager subframes before dispatching actions',async()=>{
@@ -50,5 +50,15 @@ it('coalesces change events and can reopen after the manager is closed',async()=
  expect(win.webContents.send).toHaveBeenCalledTimes(1)
  expect(win.webContents.send).toHaveBeenCalledWith('collection:change',expect.objectContaining({revision:1}))
  win.destroy();await manager.open();expect(mock.windows).toHaveLength(2)
+ manager.dispose()
+})
+it('restores shortcut ownership when the manager blurs, closes or its renderer exits',async()=>{
+ const restore=vi.fn(),manager=createManager(snapshot,async()=>({ok:true}),()=>{},restore)
+ await manager.open();const win=mock.windows[0]
+ manager.ignoreMenuShortcuts(true);expect(win.webContents.setIgnoreMenuShortcuts).toHaveBeenCalledWith(true)
+ win.events.get('blur')();expect(restore).toHaveBeenCalledTimes(1)
+ const gone=win.webContents.on.mock.calls.find((call:any[])=>call[0]==='render-process-gone')[1]
+ gone();expect(restore).toHaveBeenCalledTimes(2)
+ win.destroy();expect(restore).toHaveBeenCalledTimes(3)
  manager.dispose()
 })

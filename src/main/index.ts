@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, globalShortcut, dialog, systemPreferences } from 'electron'
 import { applyBatch, batchTargets, type BatchOperation } from './batch'
 import { createManager } from './manager'
-import { validShortcut } from '../shared/settings'
+import { editSet, visibleSetMembers } from './sets'
+import { validShortcut, validSoundStyle } from '../shared/settings'
 import type { ManagerResult, ManagerSnapshot } from '../shared/manager'
 import { setTrashed, trashed } from './trash'
 import { randomAppearance } from '../shared/appearance'
@@ -17,9 +18,9 @@ type Item={win:BrowserWindow;config:Config;record:SavedNote;entering:boolean;loc
 const notes=new Map<number,Item>()
 // Hit-testing experiments are developer tools, not part of an ordinary note.
 const diagnostics=process.env.STICKEE_DIAGNOSTICS==='1'||process.argv.includes('--diagnostics')
-let manager:ReturnType<typeof createManager>|undefined,shortcutActive=false
+let manager:ReturnType<typeof createManager>|undefined,shortcutActive=false,recordingShortcut=false
 const DEFAULT_SHORTCUT='Control+Alt+N'
-const settings=()=>({sound:data.settings.sound,defaultColor:data.settings.defaultColor??DEFAULT_COLOR,shortcut:data.settings.shortcut??DEFAULT_SHORTCUT})
+const settings=()=>({sound:data.settings.sound,soundStyle:data.settings.soundStyle??'rustle',defaultColor:data.settings.defaultColor??DEFAULT_COLOR,shortcut:data.settings.shortcut??DEFAULT_SHORTCUT})
 const changed=()=>manager?.notify()
 let store:NoteStore,data:SavedData=emptyData(),tray:Tray,quitting=false,saveTimer:ReturnType<typeof setTimeout>|undefined,saveWarning=false,persistenceReady=false
 function flush(){
@@ -30,7 +31,7 @@ function flush(){
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250);changed()}
 // A note that is still rising into place keeps its destination as its saved position.
 function capture(){for(const {win,record,config,entering} of notes.values()){if(record.deletedAt!==undefined)continue;if(!entering){const b=win.getBounds();record.x=b.x;record.y=b.y}record.angle=config.angle;record.curlSide=config.curlSide}}
-function pushState(item:Item){item.config.sound=data.settings.sound;if(!item.win.isDestroyed())item.win.webContents.send('state',{color:item.config.color,sound:item.config.sound})}
+function pushState(item:Item){item.config.sound=data.settings.sound;item.config.soundStyle=settings().soundStyle;if(!item.win.isDestroyed())item.win.webContents.send('state',{color:item.config.color,sound:item.config.sound,soundStyle:item.config.soundStyle})}
 function setColor(item:Item,color:PaperColor){item.record.color=color;item.config.color=color;pushState(item);save()}
 function setSound(enabled:boolean){data.settings.sound=enabled;for(const item of notes.values())pushState(item);buildTray();save()}
 function buildTray(){
@@ -55,10 +56,10 @@ async function restoreNote(record:SavedNote){
  try{await showNote(record)}catch(error){record.hidden=hidden;setTrashed(record,true,flush,deletedAt);buildTray();changed();throw error}
  buildTray();changed();return true
 }
-function newNote(color:PaperColor=settings().defaultColor){
+function newNote(color:PaperColor=settings().defaultColor,setId?:string){
  const cursor=screen.getCursorScreenPoint(),area=screen.getDisplayNearestPoint(cursor).workArea,p=clampPosition({x:cursor.x-180,y:cursor.y-90},area)
  const record:SavedNote={id:randomUUID(),text:'',color,...randomAppearance(),...p,hidden:false}
- data.notes.push(record);save();void createWindow(record,true,true).catch(error=>dialog.showErrorBox('Could not open note',String(error)))
+ data.notes.push(record);if(setId)data.sets.find(set=>set.id===setId)?.noteIds.push(record.id);save();void createWindow(record,true,true).catch(error=>dialog.showErrorBox('Could not open note',String(error)))
  return record.id
 }
 async function showNote(record:SavedNote){
@@ -111,21 +112,38 @@ async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResu
  changed();return {ok:true,message:moved?(moveHere?'Moved here and highlighted.':'Display unavailable. Note moved here and highlighted.'):'Highlighted on its display.'}
 }
 function openManager(){void manager?.open().catch(error=>dialog.showErrorBox('Could not open Stickee',String(error)))}
-function snapshot():ManagerSnapshot{return {revision:0,notes:data.notes.map(({id,text,color,hidden,deletedAt})=>({id,text,color,hidden,...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
+function snapshot():ManagerSnapshot{return {revision:0,sets:data.sets,notes:data.notes.map(({id,text,color,hidden,deletedAt})=>({id,text,color,hidden,...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
 async function managerAction(value:unknown):Promise<ManagerResult>{
  if(!value||typeof value!=='object'||!('type' in value)||typeof value.type!=='string')return {ok:false,error:'Invalid action'}
  const input=value as Record<string,unknown>
  if(input.type==='batch')return batchAction(input.ids,input.operation)
- if(input.type==='create')return {ok:true,id:newNote()}
+ if(input.type==='record-shortcut'){
+  if(typeof input.active!=='boolean')return {ok:false,error:'Invalid recording state'}
+  if(input.active){if(!recordingShortcut){recordingShortcut=true;if(shortcutActive)globalShortcut.unregister(settings().shortcut);shortcutActive=false;manager?.ignoreMenuShortcuts(true)}}
+  else resumeShortcut()
+  return {ok:true}
+ }
+ if(input.type==='create'){
+  if(input.setId!==undefined&&(typeof input.setId!=='string'||!data.sets.some(set=>set.id===input.setId)))return {ok:false,error:'Set is unavailable'}
+  return {ok:true,id:newNote(settings().defaultColor,input.setId as string|undefined)}
+ }
+ if(input.type==='set-create')return {ok:true,setId:editSet(data,{type:'create',id:randomUUID(),name:input.name,ids:input.ids},flush)}
+ if(['set-rename','set-delete','set-add','set-remove','set-show'].includes(input.type as string)){
+  if(typeof input.id!=='string')return {ok:false,error:'Choose a set'}
+  if(input.type==='set-show'){const ids=visibleSetMembers(data,input.id);return ids.length?batchAction(ids,'show'):{ok:true,message:'This set has no active notes.'}}
+  const kind=input.type==='set-rename'?'rename':input.type==='set-delete'?'delete':input.type==='set-add'?'add':'remove'
+  editSet(data,{type:kind,id:input.id,name:input.name,ids:input.ids},flush);changed();return {ok:true}
+ }
  if(input.type==='show-all'){const ids=data.notes.filter(n=>n.deletedAt===undefined).map(n=>n.id);return ids.length?batchAction(ids,'show'):{ok:true}}
  if(input.type==='hide-all'){const ids=data.notes.filter(n=>n.deletedAt===undefined).map(n=>n.id);return ids.length?batchAction(ids,'hide'):{ok:true}}
  if(input.type==='recover-all'){if([...notes.values()].some(item=>item.entering))return {ok:false,error:'Let new notes arrive before recovering their positions.'};recover();capture();return {ok:flush()}}
  if(input.type==='undo-delete'){const note=trashed(data)[0];return {ok:note?await restoreNote(note):false}}
  if(input.type==='settings'){
-  if(typeof input.sound!=='boolean'||!isPaperColor(input.defaultColor)||!validShortcut(input.shortcut))return {ok:false,error:'Use a modifier and a letter, number or F key for the shortcut.'}
+  if(typeof input.sound!=='boolean'||!validSoundStyle(input.soundStyle)||!isPaperColor(input.defaultColor)||!validShortcut(input.shortcut))return {ok:false,error:'Use a modifier and a letter, number or F key for the shortcut.'}
+  resumeShortcut()
   const old=data.settings,oldShortcut=settings().shortcut,next=input.shortcut,different=next!==oldShortcut
   if((different||!shortcutActive)&&!globalShortcut.register(next,()=>newNote()))return {ok:false,error:'That shortcut is already in use. Choose another combination.'}
-  data.settings={sound:input.sound,defaultColor:input.defaultColor,shortcut:next}
+  data.settings={sound:input.sound,soundStyle:input.soundStyle,defaultColor:input.defaultColor,shortcut:next}
   if(!flush()){data.settings=old;if(different)globalShortcut.unregister(next);return {ok:false,error:'Settings could not be saved.'}}
   if(different&&shortcutActive)globalShortcut.unregister(oldShortcut)
   shortcutActive=true;for(const item of notes.values())pushState(item);buildTray();updateTrayTip();changed();return {ok:true}
@@ -147,6 +165,12 @@ async function managerAction(value:unknown):Promise<ManagerResult>{
  if(input.type==='recover'||input.type==='locate')return locateNote(record,input.type==='recover')
  return {ok:false,error:'Unknown action'}
 }
+function resumeShortcut(){
+ if(!recordingShortcut)return
+ recordingShortcut=false;if(quitting)return;manager?.ignoreMenuShortcuts(false)
+ shortcutActive=globalShortcut.register(settings().shortcut,()=>newNote())
+ if(!shortcutActive)void dialog.showMessageBox({type:'warning',message:'The create shortcut is unavailable.',detail:'Choose a new shortcut in Preferences. Tray creation still works.'})
+}
 function updateTrayTip(){tray.setToolTip(`Stickee - ${settings().shortcut.replace('Control','Ctrl')} to create a note`)}
 let drag:{id:number;dx:number;dy:number}|undefined
 let timer:ReturnType<typeof setInterval>
@@ -166,7 +190,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
  const area=screen.getDisplayMatching({x:record.x,y:record.y,width:SIZE,height:SIZE}).workArea
  const p=clampPosition(record,area);record.x=p.x;record.y=p.y
   const win=new BrowserWindow({...p,width:SIZE,height:SIZE,frame:false,transparent:true,thickFrame:false,skipTaskbar:true,backgroundColor:'#00000000',hasShadow:false,resizable:false,maximizable:false,fullscreenable:false,show:false,alwaysOnTop:true,webPreferences:{preload:join(__dirname,'../preload/index.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,autoplayPolicy:'no-user-gesture-required'}})
-  const config:Config={curlSide:record.curlSide??(record.angle>0?'left':'right'),text:record.text,color:record.color,angle:record.angle,mode:'shape',nativeDrag:true,status:'',diagnostics,sound:data.settings.sound}
+  const config:Config={curlSide:record.curlSide??(record.angle>0?'left':'right'),text:record.text,color:record.color,angle:record.angle,mode:'shape',nativeDrag:true,status:'',diagnostics,sound:data.settings.sound,soundStyle:settings().soundStyle}
   try{config.status=platform.apply(win,config.angle,config.mode,config.curlSide)}catch(error){config.status=`FAILED: ${String(error)}`}
   const id=win.webContents.id
   const item:Item={win,config,record,entering:false}
@@ -273,7 +297,7 @@ async function start(){
  for(let y=2;y<14;y++)for(let x=2;x<14;x++){const i=(y*16+x)*4;pixels[i]=110;pixels[i+1]=218;pixels[i+2]=248;pixels[i+3]=255}
  tray=new Tray(nativeImage.createFromBitmap(pixels,{width:16,height:16,scaleFactor:1}))
  updateTrayTip()
- manager=createManager(snapshot,managerAction,win=>secure(win,false))
+ manager=createManager(snapshot,managerAction,win=>secure(win,false),resumeShortcut)
  buildTray()
  tray.on('double-click',()=>openManager())
  shortcutActive=globalShortcut.register(settings().shortcut,()=>newNote())
@@ -293,7 +317,7 @@ async function start(){
  screen.on('display-removed',recover);screen.on('display-metrics-changed',recover)
  openManager()
 }
-ipcMain.handle('config',event=>notes.get(event.sender.id)?.config??{curlSide:'right',text:'',color:DEFAULT_COLOR,angle:0,mode:'shape',nativeDrag:false,status:'Click-test panel',diagnostics,sound:false})
+ipcMain.handle('config',event=>notes.get(event.sender.id)?.config??{curlSide:'right',text:'',color:DEFAULT_COLOR,angle:0,mode:'shape',nativeDrag:false,status:'Click-test panel',diagnostics,sound:false,soundStyle:'rustle'})
 ipcMain.on('drag',(event,action:unknown)=>{
  const item=notes.get(event.sender.id);if(!item||event.senderFrame!==event.sender.mainFrame)return
  if(action==='start'&&!item.config.nativeDrag){const p=screen.getCursorScreenPoint(),[x,y]=item.win.getPosition();drag={id:event.sender.id,dx:p.x-x,dy:p.y-y}}

@@ -6,7 +6,7 @@ import { REST, REST_GRAB, reach, sheetShape, type Pose } from '../../shared/shee
 import { createFlow, flowActive, flowPose, stepFlow } from '../../shared/flow'
 import { settleAngle, springStep } from '../../shared/motion'
 import './paper.css'
-import { DragSound } from './drag-sound'
+import { NoteAudio } from './note-audio'
 function App(){
  const [config,setConfig]=useState<Config>(),[count,setCount]=useState(0),[point,setPoint]=useState(''),[debug,setDebug]=useState(false),[color,setColor]=useState<PaperColor>('yellow'),[picking,setPicking]=useState(false)
  const paper=useRef<HTMLDivElement>(null),active=useRef(false)
@@ -24,14 +24,14 @@ function App(){
  const [overflow,setOverflow]=useState({above:false,below:false})
  const checkOverflow=()=>{const el=editor.current;if(el)setOverflow({above:el.scrollTop>2,below:el.scrollHeight-el.clientHeight-el.scrollTop>2})}
  useEffect(()=>{if(!config||!editor.current)return;checkOverflow();const observer=new ResizeObserver(checkOverflow);observer.observe(editor.current);return()=>observer.disconnect()},[!config])
- const sound=useRef<DragSound|null>(null)
+ const sound=useRef<NoteAudio|null>(null)
  useEffect(()=>{
-  const voice=new DragSound();sound.current=voice
+  const voice=new NoteAudio();sound.current=voice
   const offMotion=window.stickee.onMotion(({vx,vy})=>{try{voice.update(Math.hypot(vx,vy))}catch{voice.stop()}})
-  const offDrag=window.stickee.onDragState(dragging=>{if(dragging)setPicking(false);else voice.stop()})
+  const offDrag=window.stickee.onDragState(dragging=>{if(dragging)setPicking(false);try{voice.drag(dragging)}catch{voice.stop()}})
   // Colour and the sound preference are owned by the main process; it also
   // changes them from the context and tray menus.
-  const offState=window.stickee.onState(state=>{setColor(state.color);voice.setEnabled(state.sound)})
+  const offState=window.stickee.onState(state=>{setColor(state.color);voice.configure(state.sound,state.soundStyle)})
   const stop=()=>{voice.stop();setPicking(false)};window.addEventListener('blur',stop)
   return()=>{offMotion();offDrag();offState();window.removeEventListener('blur',stop);voice.dispose();sound.current=null}
  },[])
@@ -120,7 +120,7 @@ function App(){
   const offSettle=window.stickee.onSettle(release)
   return()=>{offMotion();offSettle();offDrag();cancelAnimationFrame(frame);clearTimeout(quiet)}
  },[config?.angle,config?.curlSide])
- useEffect(()=>{window.stickee.config().then(initial=>{setColor(initial.color);sound.current?.setEnabled(initial.sound);setConfig(initial)})},[])
+ useEffect(()=>{window.stickee.config().then(initial=>{setColor(initial.color);sound.current?.configure(initial.sound,initial.soundStyle);setConfig(initial)})},[])
  useEffect(()=>{const stop=()=>{active.current=false;window.stickee.drag('end')};window.addEventListener('blur',stop);return()=>window.removeEventListener('blur',stop)},[])
  if(new URLSearchParams(location.search).has('panel'))return <main className="panel" onPointerDown={e=>{setCount(c=>c+1);setPoint(`${e.clientX}, ${e.clientY}`)}}><small>STICKEE / NATIVE WINDOW LAB</small><h1>Paper above.<br/>Desktop below.</h1><p>Click through the transparent corners of either note.<br/>This counter must advance when the background receives input.</p><output>{count} background presses</output><p>Last position: {point||'—'}</p><p>Move notes over this grid, then over Notepad. Close this window to quit.<br/>Notes are temporary: text is discarded on exit.</p><button onClick={()=>window.stickee.quit()}>Quit prototype</button></main>
  if(!config)return null

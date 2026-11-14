@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { ManagerResult, ManagerSnapshot } from '../shared/manager'
 
 /** One ordinary native window. No note capabilities are exposed by its preload. */
-export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unknown)=>Promise<ManagerResult>,secure:(win:BrowserWindow)=>void){
+export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unknown)=>Promise<ManagerResult>,secure:(win:BrowserWindow)=>void,onInactive:()=>void=()=>{}){
  let win:BrowserWindow|undefined,revision=0,notification:ReturnType<typeof setTimeout>|undefined
  let queue=Promise.resolve<unknown>(undefined)
  const authorized=(event:IpcMainInvokeEvent)=>win&&!win.isDestroyed()&&event.sender===win.webContents&&event.senderFrame===event.sender.mainFrame
@@ -24,12 +24,14 @@ export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unkn
   win=current;secure(current)
   // Hidden until Alt is pressed; native zoom roles retain their accelerators.
   current.setMenu(Menu.buildFromTemplate([{label:'View',submenu:[{role:'zoomIn'},{role:'zoomOut'},{role:'resetZoom'}]}]))
-  current.on('closed',()=>{if(win===current)win=undefined})
+  current.on('blur',onInactive)
+  current.webContents.on('render-process-gone',onInactive)
+  current.on('closed',()=>{onInactive();if(win===current)win=undefined})
   current.once('ready-to-show',()=>{if(!current.isDestroyed())current.show()})
   try{
    if(process.env.ELECTRON_RENDERER_URL)await current.loadURL(new URL('manager.html',process.env.ELECTRON_RENDERER_URL).toString())
    else await current.loadFile(join(__dirname,'../renderer/manager.html'))
   }catch(error){current.destroy();throw error}
  }
- return {open,notify,bounds:()=>win&&!win.isDestroyed()?win.getBounds():undefined,dispose:()=>clearTimeout(notification)}
+ return {open,notify,ignoreMenuShortcuts:(active:boolean)=>{if(win&&!win.isDestroyed())win.webContents.setIgnoreMenuShortcuts(active)},bounds:()=>win&&!win.isDestroyed()?win.getBounds():undefined,dispose:()=>clearTimeout(notification)}
 }

@@ -14,11 +14,12 @@ export function batchTargets(data:SavedData,ids:unknown,operation:unknown):Saved
 }
 /** One save for the complete batch. Preserve live record identities on rollback. */
 export function applyBatch(data:SavedData,ids:unknown,operation:BatchOperation,persist:()=>boolean,now=Date.now()):SavedNote[]{
- const targets=batchTargets(data,ids,operation),original=data.notes
+ const targets=batchTargets(data,ids,operation),original=data.notes,originalSets=data.sets
  const before=targets.map(note=>({note,hidden:note.hidden,deletedAt:note.deletedAt}))
- const rollback=()=>{data.notes=original;for(const {note,hidden,deletedAt} of before){note.hidden=hidden;if(deletedAt===undefined)delete note.deletedAt;else note.deletedAt=deletedAt}}
+ const rollback=()=>{data.notes=original;data.sets=originalSets;for(const {note,hidden,deletedAt} of before){note.hidden=hidden;if(deletedAt===undefined)delete note.deletedAt;else note.deletedAt=deletedAt}}
  if(operation==='delete-forever'){
   const removing=new Set(targets);data.notes=data.notes.filter(note=>!removing.has(note))
+  const ids=new Set(targets.map(note=>note.id));data.sets=data.sets.map(set=>({...set,noteIds:set.noteIds.filter(id=>!ids.has(id))}))
  }else{
   const last=data.notes.reduce((last,note)=>Math.max(last,note.deletedAt??-1),-1)
   targets.forEach((note,index)=>{

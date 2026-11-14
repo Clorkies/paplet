@@ -2,9 +2,9 @@
 
 # Stickee progress tracker
 
-Last updated: 2026-11-15. Phase 3C collection craft is implemented on `feat/note-manager`; additive sets are next. Comprehensive native acceptance remains deferred.
+Last updated: 2026-11-15. Phase 3D sets and revised manager/preferences are implemented on `feat/note-manager`. User requested stopping here, committing and pushing. Feature PRs target dev.
 
-**Current position:** Phase 3B manager and Phase 3C collection craft are implemented. Next: additive sets, then basic formatting. Drawing comes later; paper sizes are optional and last. Approved paper motion remains unchanged.
+**Current position:** Additive named sets, direct manager labels, shortcut recording and selectable Rustle / Click & drop audio are implemented. Formatting and drawing remain future work; optional paper sizes are last. Native acceptance is pending.
 
 The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This tracker records completion and remaining work. Update it alongside implementation changes and keep automated checks separate from manual Windows results.
 
@@ -18,6 +18,7 @@ The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This
 | 3 - Reliability, ergonomics and accessibility | **In progress; acceptance deferred** | Durable trash/undo and picker keyboard access implemented. Display/suspend hardening, full input/accessibility and resource profiling remain. |
 | 3B - Main application / note manager | **Implemented; combined acceptance pending** | Search/filter/read notes, desktop visibility/recovery, shared trash/undo/permanent deletion, sound/default colour/shortcut preferences. |
 | 3C - Collection craft and actions | **Implemented; native acceptance pending** | Cleaner scroll rails, recovery-list Trash, multi-select and atomic batches, Find/Move here with static highlight. |
+| 3D - Additive saved sets | **Implemented; native acceptance pending** | Named folios, membership editing, additive Show set, schema 4 migration; shortcut recorder and sound styles also delivered. |
 | 4 — Packaging and beta readiness | **Planned** | Unpacked build command configured only. Installer, packaged smoke tests, icons/branding, guide and release readiness remain. |
 | 5 — macOS feasibility | **Deferred** | Separate native hit-testing/window activation investigation required. Current app does not claim macOS support. |
 | 6 — Optional profiles exploration | **Future consideration only** | Decide whether profiles are useful and whether they are local-only. Accounts, authentication and sync are not implemented or authorized by this milestone. |
@@ -57,7 +58,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks (2026-11-15): production build/typecheck PASS; 46 tests across 11 files PASS. GUI, audio, Narrator, display hardware, performance and packaging acceptance remain NOT RUN.
+Latest executed checks (2026-11-15): production build/typecheck PASS; 56 tests across 14 files PASS. GUI, actual listening, OS input timing, hardware, performance and packaging acceptance remain NOT RUN.
 
 ## Phase 3B — main application direction
 
@@ -282,3 +283,35 @@ cover full-selection validation, single-save mutation, rollback preserving live
 record identities, restart parsing/restore, unrelated-note preservation and order.
 Actual GUI, audio, screen reader, hardware and performance checks: NOT RUN, still
 deferred to the consolidated acceptance pass. No push/merge/publication.
+
+## Phase 3D — sets, direct labels and input/audio preferences (2026-11-15)
+
+Implemented the user's requested order and stop point:
+
+- Removed decorative manager headings, empty-state descriptions and repeated
+  locate/retention prose. Collection headings, counts and actions are direct.
+- Read-only shortcut recorder with Record/Cancel, Escape, canonical key capture
+  and explicit Save. Stickee's current global shortcut is released during capture
+  and restored afterwards, including manager blur/close/renderer termination.
+- Existing Rustle plus a separate Click & drop style. Two short generated buffers
+  provide a grab click and damped release cue; cached per used context, non-looping,
+  stopped on mute/cancel and suspended at idle. Preview is available in Preferences.
+- Named paper-folio sets: create/rename/delete, add/remove existing members,
+  create a note in a set and additive Show set. Notes can belong to multiple sets;
+  loading twice does not duplicate their records or windows. Set deletion keeps
+  notes, trash keeps membership, permanent deletion removes references atomically.
+- Schema 4 migration for schemas 1–3, validated stable IDs/membership/settings,
+  rollback on set-write failures and preservation of prior raw backups. Sets are
+  local groupings of live notes, not templates, profiles or separate databases.
+
+Production build/typecheck PASS; 56 tests across 14 files PASS. Added tests cover
+set union/idempotence, reference preservation, deletion cleanup/rollback, migration
+and backups, shortcut capture and recorder lifecycle, and mocked tactile audio
+allocation/cues/suspension/cancellation. Native GUI, actual listening, keyboard/OS
+timing, hardware lifecycle and performance acceptance remain NOT RUN. The agent
+does not claim the synthesized sound has been audibly approved.
+
+Source comparisons confirm native paper motion/entrance, renderer dynamics,
+flow/sheet/geometry modules and original rustle engine are unchanged. The user
+authorized committing/pushing at this stop point. dev originates at main
+`161893e`; all feature PRs target dev. No merge or release is authorized/performed.

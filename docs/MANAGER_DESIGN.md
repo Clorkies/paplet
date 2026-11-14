@@ -90,3 +90,23 @@ targets the manager's display. Both show a static 1.8-second outline without
 activating text editing, changing native input shapes or tuning paper dynamics.
 Disconnected placements are recovered with a clear status message. Native focus,
 outline visibility and real scroll ergonomics remain unverified in this milestone.
+
+## User copy revision and Phase 3D
+
+Use direct functional labels: Notes, On screen, Hidden notes, Trash, Preferences.
+Remove decorative headings, motivational empty-state prose and redundant hints.
+The reading pane is for the note itself and its actions, with no repeated retention
+or locate descriptions. Factual dates remain in Trash rows.
+
+Named sets appear as a horizontal row of tabbed paper folios with compact member
+colour strips and visible/member counts. Filters/search apply within a selected
+set; Trash is global. Show set is additive. Set dialogs handle naming, membership
+and deletion; deleting a set keeps notes. Select mode and individual note actions
+both support Add to set, and members can be removed from the selected set.
+
+The shortcut control is read-only. Record temporarily releases Stickee's global
+shortcut, captures a supported combination, then restores the saved shortcut until
+Save preferences applies the change. Cancel/blur/close/renderer exit restore it.
+Sound styles are Rustle (existing engine unchanged) and Click & drop (new reusable
+short synthesized grab/release buffers). Preview is explicit; listening quality
+has not been evaluated by the agent.

@@ -14,10 +14,13 @@ to those behaviors.
 
 ## Implementation status
 
-As of the Phase 3C milestone: cleaner manager scrolling, distinct Trash, multiple
-selection/atomic batch actions/group undo and Find on desktop / Move here are
-implemented. Native acceptance is pending. Named sets, formatting and drawing are
-not implemented yet. Paper sizes remain explicitly optional and the last feature.
+Phases 3C and 3D are implemented: manager craft, multi-selection, Find/Move here,
+and additive named sets with folio navigation and schema 4 migration. Manager
+copy uses direct labels; Preferences record shortcuts and offer Rustle / Click &
+drop sound styles. Native acceptance remains pending. Formatting and drawing are
+not implemented. Paper sizes are explicitly optional and the last feature.
+The user requested stopping after sets, committing and pushing to feature
+branches whose PRs target dev. Do not start formatting in this session.
 
 ## Next milestone: Phase 3C — collection craft and actions
 
@@ -194,7 +197,6 @@ refactor the approved physics now.
 5. Later drawing phase, with its own feature acceptance once implemented.
 6. Optional square/wide/tall sizes last, preserving existing square behavior.
 
-Implementation authorized by the user following this planning update. Phase 3C
-is the first coding milestone; Phase 3D sets follows. Paper sizes are explicitly
-optional and the final feature, after drawing. Do not change the manager, editor
-and paper geometry simultaneously.
+Phases 3C and 3D are now implemented. The user requested stopping after sets.
+Formatting and drawing require a subsequent implementation session; paper sizes
+are optional and last. Do not change the editor and paper geometry simultaneously.

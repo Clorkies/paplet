@@ -125,3 +125,25 @@ Next implementation milestone: Phase 3D additive named sets with the paper-folio
 direction in PRODUCT_ROADMAP.md. Then structured formatting, later drawing, and
 OPTIONAL paper sizes as the final feature. Existing local planning updates were
 preserved. No new authorization to push, merge, publish or modify paper animation.
+
+## Latest continuation — sets and preferences (2026-11-15)
+
+Phase 3D is implemented on `feat/note-manager`. Direct manager labels replace
+decorative descriptions; named paper folios provide additive saved sets. Create,
+rename, delete, add/remove membership and create-in-set are available. Show set
+reuses existing notes/windows and leaves other visible notes alone. Trash preserves
+membership; permanent deletion cleans references. Schema 4 migrates schemas 1–3
+and preserves prior raw backups. Older versions reject schema 4 safely.
+
+Preferences now record shortcut keypresses rather than accept typed accelerators.
+The existing shortcut is temporarily released while recording and restored on
+completion/cancel/inactivity. Sound style can be Rustle or Click & drop, with an
+explicit Preview. The new sound is synthesized locally; actual listening and
+native timing are NOT RUN. Approved paper animation and original rustle engine
+are unchanged. Production build/typecheck and 56 automated tests pass.
+
+User requested stopping after these features and committing/pushing this session.
+`dev` was created from `main` at `161893e`; feature PRs target dev, never main.
+Do not infer future push/merge authorization from this session. Formatting,
+drawing and optional paper sizes are not started. Next work requires new scope;
+the combined native acceptance matrix remains pending.

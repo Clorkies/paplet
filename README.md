@@ -45,7 +45,8 @@ The aim is simple: **paper that feels light in your hand and quiet on your scree
 | **Find a thought** | Search and browse visible, hidden and trashed notes in the main Stickee window. |
 | **Find your paper** | Find on desktop briefly highlights a note where it is. Move here brings it to the collection window's display. |
 | **Tidy up together** | Select several notes to show, hide, move to Trash or restore them together. |
-| **Make it yours** | Choose a default paper colour, drag sound and create shortcut in Preferences. |
+| **Load a set** | Group existing notes into named sets and show them alongside notes already on the desktop. |
+| **Make it yours** | Choose a default paper colour, Rustle or Click & drop sounds, and record a create shortcut in Preferences. |
 | **Keep a way back** | Move notes to Trash, undo or restore later. Permanent deletion asks for confirmation. |
 | **Clear some space** | Hide a note or hide them all. Bring them back through the tray when you need them. |
 | **Pick up where you left off** | Local autosave preserves text, placement, orientation, and visibility across restarts. |
