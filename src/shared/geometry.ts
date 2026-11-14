@@ -1,3 +1,4 @@
+import { envelopeOutlines } from './sheet'
 export type Point = { x: number; y: number }
 export const SIZE = 360
 export const edge: Point[] = [[40,40],[320,40],[320,320],[40,320]].map(([x,y])=>({x,y}))
@@ -38,12 +39,24 @@ export function clampPosition(p:Point,area:{x:number;y:number;width:number;heigh
 let dragEnvelope:ReturnType<typeof region>|undefined
 export function movementRegion(){
  if(dragEnvelope)return dragEnvelope
- // Merge a sweep of both curl silhouettes into one scanline per DIP. This
- // reserves drawing room for fast tilt without a rectangular overlay.
- const rows=Array.from({length:SIZE},()=>({left:SIZE,right:0}))
- for(let angle=-11;angle<=11;angle+=2)for(const side of ['left','right'] as const){
-  for(const rect of region(angle,10,side))for(let y=rect.y;y<rect.y+rect.height;y++){
-   rows[y].left=Math.min(rows[y].left,rect.x);rows[y].right=Math.max(rows[y].right,rect.x+rect.width)
+ // Merge every extreme warped silhouette (all grab points, both curl sides,
+ // resting tilts) into one scanline per DIP. This reserves drawing room for
+ // the swinging, bending sheet without a rectangular overlay.
+ const padding=10,rows=Array.from({length:SIZE},()=>({left:SIZE,right:0}))
+ for(const points of envelopeOutlines()){
+  for(let y=0;y<SIZE;y++){
+   let min=Infinity,max=-Infinity
+   const scan=y+.5
+   for(let i=0,j=points.length-1;i<points.length;j=i++){
+    const a=points[i],b=points[j]
+    if((a.y>scan)!==(b.y>scan)){const x=a.x+(scan-a.y)*(b.x-a.x)/(b.y-a.y);if(x<min)min=x;if(x>max)max=x}
+   }
+   if(max<min)continue
+   const left=Math.max(0,Math.floor(min)-padding),right=Math.min(SIZE,Math.ceil(max)+padding)
+   for(let row=Math.max(0,y-padding);row<Math.min(SIZE,y+1+padding);row++){
+    if(left<rows[row].left)rows[row].left=left
+    if(right>rows[row].right)rows[row].right=right
+   }
   }
  }
  dragEnvelope=rows.flatMap((row,y)=>row.right>row.left?[{x:row.left,y,width:row.right-row.left,height:1}]:[])

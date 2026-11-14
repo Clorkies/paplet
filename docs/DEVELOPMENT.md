@@ -19,6 +19,12 @@ npm start
 
 Quit the previous instance through the tray before loading main/preload changes. A second launch brings back the existing instance rather than replacing its running code.
 
+Hit-testing diagnostics (shape/tight/ignore modes, native-drag comparison) are hidden from ordinary notes. Enable them for a session:
+
+```powershell
+$env:STICKEE_DIAGNOSTICS = '1'; npm run dev
+```
+
 Checks:
 
 ```powershell

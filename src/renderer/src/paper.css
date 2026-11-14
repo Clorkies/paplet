@@ -43,3 +43,25 @@ textarea::-webkit-scrollbar{display:none;width:0;height:0}
 .note-actions{top:198px;gap:12px}
 .paper:focus{outline:none}
 .paper[data-dragging] textarea{caret-color:transparent}
+
+/* The text block follows the local motion of the sheet beneath it. */
+.content{transform-origin:0 0}
+
+/* Palette. Paper, rolled underside and ink are set together per colour; every
+   incidental tint derives from the ink so no colour needs its own rules. */
+.paper{color:var(--ink);transition:color 260ms ease}
+.sheet stop{transition:stop-color 260ms ease}
+textarea,.lab,.scroll-cue{color:inherit}
+textarea::placeholder{color:currentColor;opacity:.5}
+textarea:focus-visible{outline-color:color-mix(in srgb,currentColor 55%,transparent)}
+button:focus-visible,.lab:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.grip{background:currentColor}
+.paper:hover .grip{opacity:.16}
+.note-actions{align-items:center}
+.swatches{display:flex;gap:9px;align-items:center}
+.note-actions .swatch{width:13px;height:13px;padding:0;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 38%,transparent);background:var(--swatch,transparent);transition:transform 120ms ease}
+.note-actions .swatch:hover{transform:scale(1.15)}
+.note-actions .swatch[aria-checked="true"]{box-shadow:0 0 0 2px var(--paper-b),0 0 0 3px var(--ink)}
+/* While choosing, the row stays readable rather than receding. */
+.paper .note-actions:has(.swatches){opacity:1}
+@media(prefers-reduced-motion:reduce){.paper,.sheet stop,.note-actions .swatch{transition:none}}
