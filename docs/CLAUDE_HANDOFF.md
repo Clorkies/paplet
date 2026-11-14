@@ -1,4 +1,6 @@
-﻿# Stickee — development handoff and remaining roadmap
+﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
+
+# Stickee — development handoff and remaining roadmap
 
 Prepared 2026-11-14. This document is a detailed backlog and creative brief for the next engineer, including Claude. It records current evidence and recommended work; it does not declare all proposed features part of the immediate implementation scope.
 

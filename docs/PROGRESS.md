@@ -1,3 +1,5 @@
+﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
+
 # Stickee progress tracker
 
 Last updated: 2026-11-14. Pinned-sheet paper flow (accepted by the user) and the remaining Phase 2 work are implemented on `improve/paper-motion`, uncommitted at time of writing; see the final two sections.
@@ -40,7 +42,7 @@ The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This
 - [ ] Validate mixed DPI, monitor disconnect and taskbar changes.
 - [x] Note creation entrance from the display work-area bottom.
 - [x] Curated palette with on-note picker and context menu.
-- [ ] Reversible deletion/undo.
+- [x] Main-owned persistent trash/undo (native acceptance pending).
 - [ ] Complete accessibility, IME, reduced-motion and ten-note performance checks.
 
 Checked items mean code is implemented; they do not imply that unrun native tests passed.
@@ -152,3 +154,37 @@ Evidence:
 Known tradeoffs: for the first fraction of a second the rising note can overlap a bottom taskbar while it fades in. The entrance runs on a main-process timer (8 ms), so its smoothness depends on main-thread load. Paper grain and finer edge texture were left out deliberately; the sheet stays clean.
 
 Remaining before Phase 2 can be called accepted: watch the entrance and try the picker, context menu and tray on Windows. Next roadmap item is Phase 3 (reversible deletion, display lifecycle, accessibility, profiling).
+
+
+## Phase 3 ? durable trash and keyboard access (2026-11-14)
+
+Preserved the pre-existing local documentation updates and the approved animation.
+No motion dynamics, pinch, swing, curl, settling, entrance tuning, native drag
+sampling, hit regions or audio behavior changed. Baseline tests were rerun: 32
+passed. No native regression was reproduced or claimed fixed in this session.
+
+Implemented schema 3 with validated optional deletion timestamps and migration
+from schemas 1/2. Main-owned deletion saves synchronously before hiding/destroying
+the note window; a failed save rolls back the deletion state. Tray Undo and
+individual Trash entries restore saved notes across restarts. Show All and second
+launch exclude trash. Trash has indefinite retention and no permanent deletion
+UI yet. A failed restore load returns the note to trash; failed renderer loads
+clean up their native window. Text messages from trashed notes are rejected.
+
+The colour picker now has roving Tab focus, arrow-key selection with wrap, Escape
+and selection focus restoration, and closes on focus leaving the group. Its
+appearance and paper motion remain unchanged. This was an implementation review
+fix, not a GUI-verified accessibility result.
+
+Automated evidence: production build including strict TypeScript PASS; 38 tests
+across 9 files PASS. Added real-filesystem trash/restore and v2 migration/backup
+checks, rollback/repeated-delete/reverse-undo tests, and invalid trash validation.
+GUI, audio listening, Narrator, denied-write native flow, display hardware and
+performance profiling: NOT RUN. See [MANUAL_TEST_MATRIX.md](MANUAL_TEST_MATRIX.md)
+for procedures and the resource measurement protocol.
+
+Phase 3 remains incomplete: execute native acceptance, complete display lifecycle
+recovery (including entrance/topology interaction), IME/accessibility verification
+and actual resource profiling. Do not alter approved animation to resolve a
+verification concern without the user's specific direction. Phase 3B manager is
+not started; permanent deletion remains deferred. No merge, push or publication.

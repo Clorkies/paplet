@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, globalShortcut, dialog, systemPreferences } from 'electron'
+import { setTrashed, trashed } from './trash'
 import { randomAppearance } from '../shared/appearance'
 import { randomUUID } from 'node:crypto'
 import { NoteStore, emptyData, type SavedNote, type SavedData } from './store'
@@ -20,15 +21,30 @@ function flush(){
 }
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250)}
 // A note that is still rising into place keeps its destination as its saved position.
-function capture(){for(const {win,record,config,entering} of notes.values()){if(!entering){const b=win.getBounds();record.x=b.x;record.y=b.y}record.angle=config.angle;record.curlSide=config.curlSide}}
+function capture(){for(const {win,record,config,entering} of notes.values()){if(record.deletedAt!==undefined)continue;if(!entering){const b=win.getBounds();record.x=b.x;record.y=b.y}record.angle=config.angle;record.curlSide=config.curlSide}}
 function pushState(item:Item){item.config.sound=data.settings.sound;if(!item.win.isDestroyed())item.win.webContents.send('state',{color:item.config.color,sound:item.config.sound})}
 function setColor(item:Item,color:PaperColor){item.record.color=color;item.config.color=color;pushState(item);save()}
 function setSound(enabled:boolean){data.settings.sound=enabled;for(const item of notes.values())pushState(item);buildTray();save()}
 function buildTray(){
- tray?.setContextMenu(Menu.buildFromTemplate([{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},{label:'Quit',click:()=>app.quit()}]))
+ tray?.setContextMenu(Menu.buildFromTemplate([{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Undo delete',enabled:trashed(data).length>0,click:()=>{const note=trashed(data)[0];if(note)restoreNote(note)}},{label:'Trash',submenu:trashed(data).length?trashed(data).map(note=>({label:(note.text.trim().split('\n')[0]||'Untitled note').slice(0,60).replace(/&/g,'&&'),click:()=>restoreNote(note)})):[{label:'Trash is empty',enabled:false}]},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},{label:'Quit',click:()=>app.quit()}]))
 }
-function showAll(){for(const {win,record} of notes.values()){record.hidden=false;win.showInactive();platform.keepOnTop(win)}save()}
-function hideAll(){for(const {win,record} of notes.values()){record.hidden=true;win.hide()}capture();flush()}
+function showAll(){for(const {win,record} of notes.values()){if(record.deletedAt!==undefined)continue;record.hidden=false;win.showInactive();platform.keepOnTop(win)}save()}
+function hideAll(){for(const {win,record} of notes.values()){if(record.deletedAt!==undefined)continue;record.hidden=true;win.hide()}capture();flush()}
+function deleteNote(item:Item){
+ capture()
+ const deletedAt=Math.max(Date.now(),(trashed(data)[0]?.deletedAt??-1)+1)
+ if(!setTrashed(item.record,true,flush,deletedAt))return
+ item.win.hide();item.win.destroy();buildTray()
+}
+function restoreNote(record:SavedNote){
+ const deletedAt=record.deletedAt
+ if(!setTrashed(record,false,flush))return
+ record.hidden=false
+ const item=[...notes.values()].find(item=>item.record.id===record.id)
+ if(item){item.win.show();platform.keepOnTop(item.win,true)}
+ else void createWindow(record,true).catch(error=>{setTrashed(record,true,flush,deletedAt);buildTray();dialog.showErrorBox('Could not restore note',String(error))})
+ save();buildTray()
+}
 function newNote(color:PaperColor=DEFAULT_COLOR){
  const cursor=screen.getCursorScreenPoint(),area=screen.getDisplayNearestPoint(cursor).workArea,p=clampPosition({x:cursor.x-180,y:cursor.y-90},area)
  const record:SavedNote={id:randomUUID(),text:'',color,...randomAppearance(),...p,hidden:false}
@@ -146,9 +162,9 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
   win.on('closed',()=>{notes.delete(id);if(drag?.id===id)drag=undefined})
   win.on('blur',()=>{if(drag?.id===id)drag=undefined;capture();flush()})
   win.on('close',event=>{if(!quitting){event.preventDefault();record.hidden=true;win.hide();capture();flush()}})
-  win.webContents.on('context-menu',()=>Menu.buildFromTemplate([{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'},{type:'separator'},{label:'Paper color',submenu:COLORS.map(color=>({label:PALETTE[color].label,type:'radio' as const,checked:config.color===color,click:()=>setColor(item,color)}))},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:menuItem=>setSound(menuItem.checked)},{type:'separator'},{label:'New note',click:()=>newNote(config.color)},{label:'Hide note',click:()=>{record.hidden=true;win.hide();capture();flush()}}]).popup({window:win}))
+  win.webContents.on('context-menu',()=>Menu.buildFromTemplate([{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'},{type:'separator'},{label:'Paper color',submenu:COLORS.map(color=>({label:PALETTE[color].label,type:'radio' as const,checked:config.color===color,click:()=>setColor(item,color)}))},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:menuItem=>setSound(menuItem.checked)},{type:'separator'},{label:'New note',click:()=>newNote(config.color)},{label:'Move to Trash',click:()=>deleteNote(item)},{label:'Hide note',click:()=>{record.hidden=true;win.hide();capture();flush()}}]).popup({window:win}))
   win.once('ready-to-show',()=>{if(!record.hidden){if(entrance)startEntrance();if(focus)win.show();else win.showInactive()}})
-  await load(win,{})
+  try{await load(win,{})}catch(error){win.destroy();throw error}
 }
 async function start(){
  store=new NoteStore(join(app.getPath('userData'),'data'));data=store.load();persistenceReady=true
@@ -162,7 +178,7 @@ async function start(){
  tray.on('double-click',()=>newNote())
  if(!globalShortcut.register('Control+Alt+N',()=>newNote()))void dialog.showMessageBox({type:'warning',message:'Ctrl+Alt+N is already in use.',detail:'Create notes from the Stickee tray menu instead.'})
  movementRegion() // build the cached drag envelope before the first drag needs it
- for(const record of data.notes)await createWindow(record)
+ for(const record of data.notes)if(record.deletedAt===undefined)await createWindow(record)
  if(data.notes.length===0)newNote()
  save()
  timer=setInterval(()=>{
@@ -189,7 +205,7 @@ ipcMain.handle('experiment',(event,mode:unknown,nativeDrag:unknown)=>{
 })
 ipcMain.on('text',(event,value:unknown,immediate:unknown)=>{
  const item=notes.get(event.sender.id)
- if(!item||event.senderFrame!==event.sender.mainFrame||typeof value!=='string'||value.length>1_000_000||typeof immediate!=='boolean')return
+ if(!item||item.record.deletedAt!==undefined||event.senderFrame!==event.sender.mainFrame||typeof value!=='string'||value.length>1_000_000||typeof immediate!=='boolean')return
  item.record.text=value;item.config.text=value;if(immediate)flush();else save()
 })
 // A note made from another note starts on the same paper.
@@ -200,7 +216,7 @@ ipcMain.on('quit',event=>{if(notes.has(event.sender.id))app.quit()})
 if(!app.requestSingleInstanceLock())app.quit()
 else {
  app.whenReady().then(start).catch(error=>{dialog.showErrorBox('Stickee startup failed',String(error));app.quit()})
- app.on('second-instance',()=>{showAll();const item=[...notes.values()][0];if(item)item.win.focus()})
+ app.on('second-instance',()=>{showAll();const item=[...notes.values()].find(item=>item.record.deletedAt===undefined);if(item)item.win.focus()})
 }
 app.on('window-all-closed',()=>{})
 app.on('before-quit',event=>{capture();if(!flush()){event.preventDefault();quitting=false;return}quitting=true})

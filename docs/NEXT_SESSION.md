@@ -1,4 +1,6 @@
-﻿# Fresh-session handoff — Phase 2 to Phase 3
+﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
+
+# Fresh-session handoff — Phase 2 to Phase 3
 
 Prepared 2026-11-14 after reviewing Claude's working tree.
 
@@ -56,4 +58,21 @@ Use author AND committer `Clorkies <clarkisnoob434@gmail.com>`, concise messages
 
 ## Prompt for the new session
 
-Continue Stickee from `improve/paper-motion`. Read `docs/NEXT_SESSION.md` and all referenced specifications, inspect the actual repo, and preserve existing work. Phase 2 code is implemented and its build/typecheck plus 32 tests pass, but native Windows acceptance remains pending. First review the current milestone and resolve reproduced core regressions, then implement Phase 3 reliability in coherent increments: reversible delete/undo, display lifecycle, accessibility and profiling. Keep Apple-quality craft, native responsiveness, click-through, explicit editing and local-first persistence. The creative main manager is Phase 3B after core reliability. Update progress and distinguish actual GUI/audio/performance evidence from unit tests. Use infrequent milestone commits, not a commit per small edit. Do not merge, push or publish without authorization for the new work.
+Continue Stickee from `improve/paper-motion`. Read `docs/NEXT_SESSION.md` and all referenced specifications, inspect the actual repo, and preserve existing work. Phase 2 code is implemented and its build/typecheck plus 32 tests pass, but native Windows acceptance remains pending. The paper animation is approved as ABSOLUTELY AMAZING: do not change it unless the user explicitly requests specific modifications. First review the current milestone and resolve reproduced core regressions without altering the approved animation, then implement Phase 3 reliability in coherent increments: reversible delete/undo, display lifecycle, accessibility and profiling. Keep Apple-quality craft, native responsiveness, click-through, explicit editing and local-first persistence. The creative main manager is Phase 3B after core reliability. Update progress and distinguish actual GUI/audio/performance evidence from unit tests. Use infrequent milestone commits, not a commit per small edit. Do not merge, push or publish without authorization for the new work.
+
+
+## Latest continuation ? Phase 3 trash milestone (2026-11-14)
+
+This section supersedes the earlier next-step snapshot. Phase 2 remains unchanged
+and native acceptance pending. Phase 3 now includes schema 3 persistent trash,
+tray Undo/individual restore, save rollback, destroyed deleted windows, failed
+load cleanup, and colour-picker keyboard navigation/focus restoration. Schema
+1/2 migration preserves content/settings and prior-file backups. Trash never
+expires; no permanent deletion UI yet. Build/typecheck and 38 tests pass.
+
+Read docs/MANUAL_TEST_MATRIX.md as well as the original referenced specs. It
+consolidates acceptance and a 1/5/10-note profiling protocol. This session ran no
+GUI/audio/performance checks. Display lifecycle, full accessibility/IME and actual
+profiling remain next. Phase 3B manager remains unimplemented. Preserve the
+approved animation exactly; newer native verification is not permission to
+change it. No new push/merge/publication authorization exists.
