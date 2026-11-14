@@ -2,9 +2,9 @@
 
 # Stickee progress tracker
 
-Last updated: 2026-11-15. Phase 3B manager is implemented on `feat/note-manager`; consolidated Windows acceptance follows this milestone per user direction.
+Last updated: 2026-11-15. Phase 3C collection craft is implemented on `feat/note-manager`; additive sets are next. Comprehensive native acceptance remains deferred.
 
-**Current position:** Phase 3B manager is implemented. The user moved comprehensive Windows/audio/accessibility/display/performance acceptance after this milestone. Phase 3 reliability still has pending lifecycle work; the approved paper animation remains unchanged.
+**Current position:** Phase 3B manager and Phase 3C collection craft are implemented. Next: additive sets, then basic formatting. Drawing comes later; paper sizes are optional and last. Approved paper motion remains unchanged.
 
 The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This tracker records completion and remaining work. Update it alongside implementation changes and keep automated checks separate from manual Windows results.
 
@@ -17,6 +17,7 @@ The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This
 | 2 — Tactile paper and motion | **Implemented; native acceptance pending** | Pinned-sheet flow, directional curl, creation entrance, five-colour palette with picker, persistent sound preference and diagnostics moved out of ordinary notes. Native visual acceptance of the entrance, performance profiling and live geometry validation remain. |
 | 3 - Reliability, ergonomics and accessibility | **In progress; acceptance deferred** | Durable trash/undo and picker keyboard access implemented. Display/suspend hardening, full input/accessibility and resource profiling remain. |
 | 3B - Main application / note manager | **Implemented; combined acceptance pending** | Search/filter/read notes, desktop visibility/recovery, shared trash/undo/permanent deletion, sound/default colour/shortcut preferences. |
+| 3C - Collection craft and actions | **Implemented; native acceptance pending** | Cleaner scroll rails, recovery-list Trash, multi-select and atomic batches, Find/Move here with static highlight. |
 | 4 — Packaging and beta readiness | **Planned** | Unpacked build command configured only. Installer, packaged smoke tests, icons/branding, guide and release readiness remain. |
 | 5 — macOS feasibility | **Deferred** | Separate native hit-testing/window activation investigation required. Current app does not claim macOS support. |
 | 6 — Optional profiles exploration | **Future consideration only** | Decide whether profiles are useful and whether they are local-only. Accounts, authentication and sync are not implemented or authorized by this milestone. |
@@ -56,7 +57,7 @@ Checked items mean code is implemented; they do not imply that unrun native test
 | Persistence and recovery | Four real-filesystem tests pass. Native multi-note restart/forced-kill checks not run by agent. | Follow [Phase 1 checklist](PHASE_1.md) with disposable recovery data. |
 | Development packaging dependencies | Last audit reported six moderate advisories, no high/critical. | Review packaging dependency chain before distribution; do not assume an old audit is current. |
 
-Latest executed checks (2026-11-15): production build/typecheck PASS; 42 tests across 10 files PASS. GUI, audio, Narrator, display hardware, performance and packaging acceptance remain NOT RUN. See the latest milestone entry and MANUAL_TEST_MATRIX.md.
+Latest executed checks (2026-11-15): production build/typecheck PASS; 46 tests across 11 files PASS. GUI, audio, Narrator, display hardware, performance and packaging acceptance remain NOT RUN.
 
 ## Phase 3B — main application direction
 
@@ -230,3 +231,54 @@ events, and preference persistence/validation. No actual GUI, listening, Narrato
 mixed-DPI/lifecycle hardware or CPU/memory/frame measurements were run. These
 remain NOT RUN in `MANUAL_TEST_MATRIX.md`. Design rationale in `MANAGER_DESIGN.md`.
 No merge, push, publish or packaging/release performed.
+
+## Product scope update — 2026-11-15 (planning only)
+
+User likes the Phase 3B foundation and requests further manager craft. The latest
+scope/order is in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md):
+
+- Phase 3C: cleaner scrolling, a distinct Trash view, multiple selection and
+  separate Find on desktop / Move here actions with temporary highlighting.
+- Phase 3D: named sets that show their existing notes additively, without replacing
+  visible notes or duplicating content/windows; a paper-folio UI direction.
+- Phase 3E: bold, italic, underline, strikethrough, bullets and checklists through
+  a validated structured editor and lossless plain-text migration.
+- Later: drawing/scribbles (high interest), then optional wide/tall paper sizes
+  (lower urgency). Preserve the approved square-paper motion throughout.
+
+No runtime code changed in this planning update; these items are not delivered.
+Beyond QA, remaining work includes display/suspend implementation gaps, explicit
+backup/export/import, release packaging/identity/help and later macOS feasibility.
+
+## Phase 3C — collection craft and batch actions (2026-11-15)
+
+Implemented the first authorized roadmap milestone, preserving the existing local
+planning edits. Paper sizes are explicitly optional and last; sets are next.
+
+- Thin integrated native scrollbars with hover/focus contrast and high-contrast
+  fallback. Wheel, keyboard, touchpad and native thumb interaction are retained.
+- Distinct Trash recovery list with removal dates, paper-colour markers, retention
+  guidance and a document-style reading pane. Dates outside supported display
+  ranges fall back safely rather than crashing the collection.
+- Select mode, visible checkmarks, Ctrl-click, Shift-click/ranges, arrow/Home/End
+  navigation and scoped Ctrl+A. Contextual actions support bulk Show, Hide, Trash,
+  Restore and confirmed permanent deletion; one main-owned save with full rollback
+  precedes native effects. Inline Undo restores the trashed group in the current
+  manager session. Selection clears when its collection/search changes.
+- Separate Find on desktop / Move here. Find retains reachable placement; Move
+  here uses the manager's display. Both reveal/raise without an explicit editor
+  focus request and add a static 1.8-second outline following the existing surface.
+  A renderer-ready handshake protects the initial highlight on recreated notes.
+  Unavailable displays recover with a status message. No extra input window/region.
+- Native window failures after a successful batch save remain visible as warnings;
+  note contents/state stay saved and the window can be retried individually.
+
+Approved motion preserved: native motion/entrance block, renderer dynamics effect,
+flow/sheet/motion modules, native geometry and audio engine are unchanged. The only
+new desktop feedback is the explicitly requested temporary outline.
+
+Production build/typecheck and all 46 tests across 11 files PASS. New batch tests
+cover full-selection validation, single-save mutation, rollback preserving live
+record identities, restart parsing/restore, unrelated-note preservation and order.
+Actual GUI, audio, screen reader, hardware and performance checks: NOT RUN, still
+deferred to the consolidated acceptance pass. No push/merge/publication.

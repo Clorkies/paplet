@@ -96,3 +96,32 @@ checks remain NOT RUN. Next: perform the consolidated matrix when requested,
 resolve demonstrated reliability/design issues while keeping the approved paper
 animation frozen. Display/suspend lifecycle hardening is not certified complete.
 Do not push, merge or publish without authorization.
+
+## Latest product planning update — 2026-11-15
+
+The user likes the manager foundation and requests substantial UI improvements.
+Read PRODUCT_ROADMAP.md before coding. Recommended next milestone is Phase 3C:
+clean native scrollbar styling, distinct Trash composition, multiple selection,
+and separate Find on desktop / Move here actions with a brief independent visual
+highlight. Then Phase 3D introduces additive named sets; Phase 3E adds six basic
+text/list formats. Drawing is a desired later feature; optional paper sizes come
+last with lower urgency. Approved paper dynamics remain frozen.
+
+This planning turn changes documentation only. Do not infer that these features
+are already implemented. The consolidated acceptance plan remains in effect;
+focused implementation checks continue without repeating the full native matrix.
+
+## Latest continuation — Phase 3C implemented (2026-11-15)
+
+Current branch remains `feat/note-manager`. Manager craft is implemented: slimmer
+native scrollbars, distinct dated Trash list, multi-select/batch actions/group
+undo, and separate Find on desktop / Move here with a static 1.8-second outline.
+Batch state commits before native effects; failures roll back complete selections.
+Locate uses existing native bounds/input regions and preserves approved dynamics.
+Find/recovery do not explicitly focus the editor. GUI/focus/visual acceptance is
+NOT RUN; production build/typecheck plus 46 automated tests PASS.
+
+Next implementation milestone: Phase 3D additive named sets with the paper-folio
+direction in PRODUCT_ROADMAP.md. Then structured formatting, later drawing, and
+OPTIONAL paper sizes as the final feature. Existing local planning updates were
+preserved. No new authorization to push, merge, publish or modify paper animation.

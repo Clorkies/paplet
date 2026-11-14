@@ -30,6 +30,9 @@ refresh rate, revision and evidence when executing these checks.
 | Preferences | Save sound/default colour/shortcut, restart. Reserve the requested shortcut elsewhere: old shortcut stays usable and error appears. Simulate failed disk writes: old settings remain. | Validation/persistence tests PASS; OS registration/GUI NOT RUN |
 | Permanent deletion | Trash a disposable note, cancel permanent deletion, then confirm. Restart: removed from collection; unrelated notes remain. Disk failure must roll back removal. | Implementation/build only; native confirmation NOT RUN |
 | Manager accessibility / design | Keyboard-only search/filter/select/show/hide/trash/restore/preferences, system zoom, Narrator, light/dark/high contrast, empty/dense/long-content states. | NOT RUN |
+| Multi-select / batches | Select mode, Ctrl-click, Shift ranges, arrows and scoped Ctrl+A; bulk show/hide/trash, Undo group, restore and cancel/confirm permanent deletion. Retry with failed disk writes: whole batch rolls back before native effects. Verify selection after external note changes. | Transaction tests PASS; GUI/keyboard/fault injection NOT RUN |
+| Find / Move here | Locate visible/hidden/recreated notes without editor activation; repeated requests renew the static outline. Find preserves reachable position; Move here targets manager's display. Disconnect old display and retry. No changed paper physics or click-through region. | Source/build review only; native GUI NOT RUN |
+| Scroll / Trash craft | Thumb drag/wheel/trackpad/Page Up/Down/Tab at light/dark/high contrast and zoom levels. Trash has dated rows and recovery emphasis; preview scroll and long titles remain usable. | NOT RUN |
 
 ## Resource profiling protocol (not yet measured)
 

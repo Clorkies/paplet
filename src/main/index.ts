@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, globalShortcut, dialog, systemPreferences } from 'electron'
+import { applyBatch, batchTargets, type BatchOperation } from './batch'
 import { createManager } from './manager'
 import { validShortcut } from '../shared/settings'
 import type { ManagerResult, ManagerSnapshot } from '../shared/manager'
@@ -12,7 +13,7 @@ import { join } from 'node:path'
 import { clampPosition, contains, polygon, region, movementRegion, SIZE } from '../shared/geometry'
 import { platform } from './platform'
 import type { Config, Mode } from '../shared/api'
-type Item={win:BrowserWindow;config:Config;record:SavedNote;entering:boolean;stopEntrance?:(arrive:boolean)=>void}
+type Item={win:BrowserWindow;config:Config;record:SavedNote;entering:boolean;locateReady?:boolean;pendingLocate?:boolean;stopEntrance?:(arrive:boolean)=>void}
 const notes=new Map<number,Item>()
 // Hit-testing experiments are developer tools, not part of an ordinary note.
 const diagnostics=process.env.STICKEE_DIAGNOSTICS==='1'||process.argv.includes('--diagnostics')
@@ -68,14 +69,56 @@ async function showNote(record:SavedNote){
  else await createWindow(record,true)
  changed()
 }
+async function batchAction(ids:unknown,operation:unknown):Promise<ManagerResult>{
+ let targets=batchTargets(data,ids,operation)
+ if(operation==='delete-forever'){
+  const result=await dialog.showMessageBox({type:'warning',message:`Delete ${targets.length===1?'this note':`these ${targets.length} notes`} permanently?`,detail:'This cannot be undone. Other notes stay untouched.',buttons:['Cancel','Delete permanently'],defaultId:0,cancelId:0,noLink:true})
+  if(result.response!==1)return {ok:true,cancelled:true}
+  targets=batchTargets(data,ids,operation)
+ }
+ capture()
+ targets=applyBatch(data,ids,operation as BatchOperation,flush)
+ // Native effects follow the durable transaction, never a half-saved batch.
+ const results=await Promise.allSettled(targets.map(async record=>{
+  const item=[...notes.values()].find(item=>item.record.id===record.id)
+  if(operation==='trash'){if(item){item.win.hide();item.win.destroy()}}
+  else if(operation==='hide')item?.win.hide()
+  else if(operation==='show'||operation==='restore'){
+   if(item){item.win.showInactive();platform.keepOnTop(item.win)}
+   else await createWindow(record)
+  }
+ }))
+ buildTray();changed()
+ if(results.some(result=>result.status==='rejected'))return {ok:true,warning:'Notes were saved. A window could not open; use Edit desktop note to retry.'}
+ return {ok:true}
+}
+async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResult>{
+ let item=[...notes.values()].find(item=>item.record.id===record.id)
+ if(item?.entering)return {ok:false,error:'Let this note arrive before locating it.'}
+ const bounds=manager?.bounds(),destination=bounds?screen.getDisplayMatching(bounds):screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+ const old={x:record.x,y:record.y,hidden:record.hidden}
+ // A disconnected display is recovered; otherwise Find preserves exact position.
+ const reachable=screen.getAllDisplays().some(display=>{const b=display.workArea;return record.x+SIZE-40>b.x&&record.x+40<b.x+b.width&&record.y+SIZE-40>b.y&&record.y+40<b.y+b.height})
+ const moved=moveHere||!reachable
+ if(moved){const p=clampPosition({x:destination.workArea.x+80,y:destination.workArea.y+80},destination.workArea);record.x=p.x;record.y=p.y}
+ record.hidden=false
+ if(!flush()){Object.assign(record,old);return {ok:false,error:'Could not save note visibility or position.'}}
+ if(!item){await createWindow(record);item=[...notes.values()].find(item=>item.record.id===record.id)}
+ if(!item)return {ok:false,error:'Could not open this note.'}
+ if(moved)platform.move(item.win,record.x,record.y)
+ item.win.showInactive();platform.keepOnTop(item.win,true)
+ if(item.locateReady)item.win.webContents.send('locate');else item.pendingLocate=true
+ changed();return {ok:true,message:moved?(moveHere?'Moved here and highlighted.':'Display unavailable. Note moved here and highlighted.'):'Highlighted on its display.'}
+}
 function openManager(){void manager?.open().catch(error=>dialog.showErrorBox('Could not open Stickee',String(error)))}
 function snapshot():ManagerSnapshot{return {revision:0,notes:data.notes.map(({id,text,color,hidden,deletedAt})=>({id,text,color,hidden,...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
 async function managerAction(value:unknown):Promise<ManagerResult>{
  if(!value||typeof value!=='object'||!('type' in value)||typeof value.type!=='string')return {ok:false,error:'Invalid action'}
  const input=value as Record<string,unknown>
+ if(input.type==='batch')return batchAction(input.ids,input.operation)
  if(input.type==='create')return {ok:true,id:newNote()}
- if(input.type==='show-all'){showAll();return {ok:true}}
- if(input.type==='hide-all'){hideAll();return {ok:true}}
+ if(input.type==='show-all'){const ids=data.notes.filter(n=>n.deletedAt===undefined).map(n=>n.id);return ids.length?batchAction(ids,'show'):{ok:true}}
+ if(input.type==='hide-all'){const ids=data.notes.filter(n=>n.deletedAt===undefined).map(n=>n.id);return ids.length?batchAction(ids,'hide'):{ok:true}}
  if(input.type==='recover-all'){if([...notes.values()].some(item=>item.entering))return {ok:false,error:'Let new notes arrive before recovering their positions.'};recover();capture();return {ok:flush()}}
  if(input.type==='undo-delete'){const note=trashed(data)[0];return {ok:note?await restoreNote(note):false}}
  if(input.type==='settings'){
@@ -90,15 +133,7 @@ async function managerAction(value:unknown):Promise<ManagerResult>{
  if(typeof input.id!=='string')return {ok:false,error:'Choose a note.'}
  const record=data.notes.find(note=>note.id===input.id)
  if(!record)return {ok:false,error:'This note is no longer available.'}
- if(input.type==='delete-forever'){
-  if(record.deletedAt===undefined)return {ok:false,error:'Move this note to Trash first.'}
-  const result=await dialog.showMessageBox({type:'warning',message:'Delete this note permanently?',detail:'This removes the note from Stickee. This action cannot be undone.',buttons:['Cancel','Delete permanently'],defaultId:0,cancelId:0,noLink:true})
-  if(result.response!==1)return {ok:true}
-  if(record.deletedAt===undefined||!data.notes.includes(record))return {ok:false,error:'This note changed while confirmation was open. Try again.'}
-  const index=data.notes.indexOf(record);data.notes.splice(index,1)
-  if(!flush()){data.notes.splice(index,0,record);return {ok:false,error:'Could not save the deletion.'}}
-  buildTray();changed();return {ok:true}
- }
+ if(input.type==='delete-forever')return batchAction([record.id],'delete-forever')
  if(input.type==='restore')return {ok:await restoreNote(record)}
  if(record.deletedAt!==undefined)return {ok:false,error:'Restore this note from Trash first.'}
  if(input.type==='trash')return {ok:trashRecord(record)}
@@ -109,12 +144,7 @@ async function managerAction(value:unknown):Promise<ManagerResult>{
   if(!flush()){record.hidden=hidden;return {ok:false,error:'Could not save note visibility.'}}
   item?.win.hide();capture();changed();return {ok:true}
  }
- if(input.type==='recover'){
-  if(item?.entering)return {ok:false,error:'Let this note arrive before recovering its position.'}
-  const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,p=clampPosition({x:area.x+80,y:area.y+80},area)
-  record.x=p.x;record.y=p.y;if(item)platform.move(item.win,p.x,p.y)
-  await showNote(record);return {ok:true}
- }
+ if(input.type==='recover'||input.type==='locate')return locateNote(record,input.type==='recover')
  return {ok:false,error:'Unknown action'}
 }
 function updateTrayTip(){tray.setToolTip(`Stickee - ${settings().shortcut.replace('Control','Ctrl')} to create a note`)}
@@ -141,6 +171,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
   const id=win.webContents.id
   const item:Item={win,config,record,entering:false}
   notes.set(id,item);secure(win)
+  win.webContents.on('did-start-loading',()=>{item.locateReady=false})
   // Reassert the native topmost band at activation boundaries. Never call
   // show/focus from blur: another application must keep keyboard focus.
   win.on('show',()=>platform.keepOnTop(win))
@@ -274,6 +305,7 @@ ipcMain.handle('experiment',(event,mode:unknown,nativeDrag:unknown)=>{
  drag=undefined;item.config.mode=mode as Mode;item.config.nativeDrag=nativeDrag
  item.config.status=platform.apply(item.win,item.config.angle,item.config.mode,item.config.curlSide)
 })
+ipcMain.on('locate-ready',event=>{const item=notes.get(event.sender.id);if(!item||event.senderFrame!==event.sender.mainFrame)return;item.locateReady=true;if(item.pendingLocate){item.pendingLocate=false;item.win.webContents.send('locate')}})
 ipcMain.on('text',(event,value:unknown,immediate:unknown)=>{
  const item=notes.get(event.sender.id)
  if(!item||item.record.deletedAt!==undefined||event.senderFrame!==event.sender.mainFrame||typeof value!=='string'||value.length>1_000_000||typeof immediate!=='boolean')return

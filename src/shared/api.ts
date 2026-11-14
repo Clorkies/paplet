@@ -17,6 +17,7 @@ export interface StickeeAPI {
  quit():void
  onDragState(callback:(dragging:boolean)=>void):()=>void
  onSettle(callback:()=>void):()=>void
+ onLocate(callback:()=>void):()=>void
  onMotion(callback:(motion:Motion)=>void):()=>void
 }
 declare global { interface Window { stickee:StickeeAPI } }

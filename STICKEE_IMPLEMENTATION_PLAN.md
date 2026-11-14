@@ -436,3 +436,12 @@ implementation. Retain focused implementation build/type checks and honest NOT R
 status for deferred acceptance. Approved paper animation must remain unchanged
 unless the user explicitly requests a specific modification. Phase 3B implementation
 is tracked on `feat/note-manager`; see the latest docs/PROGRESS.md entry.
+
+## Expanded product scope — 2026-11-15
+
+Read [PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md) for the latest requested scope
+and implementation order. It supersedes older exclusions for basic formatting
+and collections: manager craft/multi-select/locate, additive saved note sets,
+bold/italic/underline/strikethrough/bullets/checklists, then later drawing and
+optional wide/tall papers. These features are planned, not implemented. Keep the
+approved paper animation frozen. This turn updates plans only.

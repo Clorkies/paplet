@@ -43,6 +43,8 @@ The aim is simple: **paper that feels light in your hand and quiet on your scree
 | **Put it where it belongs** | Move independent, frameless notes around your desktop and overlap them naturally. |
 | **Keep writing** | Edit plain, multiline text with selection, copy, paste, and scrolling. |
 | **Find a thought** | Search and browse visible, hidden and trashed notes in the main Stickee window. |
+| **Find your paper** | Find on desktop briefly highlights a note where it is. Move here brings it to the collection window's display. |
+| **Tidy up together** | Select several notes to show, hide, move to Trash or restore them together. |
 | **Make it yours** | Choose a default paper colour, drag sound and create shortcut in Preferences. |
 | **Keep a way back** | Move notes to Trash, undo or restore later. Permanent deletion asks for confirmation. |
 | **Clear some space** | Hide a note or hide them all. Bring them back through the tray when you need them. |

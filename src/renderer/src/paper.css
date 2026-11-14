@@ -65,3 +65,7 @@ button:focus-visible,.lab:focus-visible{outline:2px solid currentColor;outline-o
 /* While choosing, the row stays readable rather than receding. */
 .paper .note-actions:has(.swatches){opacity:1}
 @media(prefers-reduced-motion:reduce){.paper,.sheet stop,.note-actions .swatch{transition:none}}
+
+/* Locate is a temporary outline only: no transform, spring, shape or input change. */
+.paper[data-located] #paper-surface{stroke:var(--ink);stroke-width:5;stroke-linejoin:round;paint-order:stroke fill}
+@media(forced-colors:active){.paper[data-located] #paper-surface{stroke:Highlight}}

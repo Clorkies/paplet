@@ -31,5 +31,5 @@ export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unkn
    else await current.loadFile(join(__dirname,'../renderer/manager.html'))
   }catch(error){current.destroy();throw error}
  }
- return {open,notify,dispose:()=>clearTimeout(notification)}
+ return {open,notify,bounds:()=>win&&!win.isDestroyed()?win.getBounds():undefined,dispose:()=>clearTimeout(notification)}
 }
