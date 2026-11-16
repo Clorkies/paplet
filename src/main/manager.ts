@@ -1,5 +1,7 @@
 import { BrowserWindow, ipcMain, Menu, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'node:path'
+import { release } from 'node:os'
+import { nativeTheme } from 'electron'
 import type { ManagerResult, ManagerSnapshot } from '../shared/manager'
 
 /** One ordinary native window. No note capabilities are exposed by its preload. */
@@ -18,9 +20,11 @@ export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unkn
   clearTimeout(notification)
   notification=setTimeout(()=>{revision++;if(win&&!win.isDestroyed()&&!win.webContents.isLoadingMainFrame())win.webContents.send('collection:change',snapshot())},100)
  }
+ /** Acrylic needs Windows 11 22H2 (build 22621) and is skipped for high contrast. */
+ const material=process.platform==='win32'&&Number(release().split('.')[2])>=22621&&!nativeTheme.shouldUseHighContrastColors
  const open=async()=>{
   if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.show();win.focus();return}
-  const current=new BrowserWindow({width:1120,height:780,minWidth:760,minHeight:560,title:'Stickee',backgroundColor:'#f4f3ef',show:false,autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'../preload/manager.js'),sandbox:true,contextIsolation:true,nodeIntegration:false}})
+  const current=new BrowserWindow({width:1120,height:780,minWidth:760,minHeight:560,title:'Stickee',backgroundColor:material?'#00000000':'#f4f3ef',...(material?{backgroundMaterial:'acrylic' as const}:{}),show:false,autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'../preload/manager.js'),sandbox:true,contextIsolation:true,nodeIntegration:false}})
   win=current;secure(current)
   // Hidden until Alt is pressed; native zoom roles retain their accelerators.
   current.setMenu(Menu.buildFromTemplate([{label:'View',submenu:[{role:'zoomIn'},{role:'zoomOut'},{role:'resetZoom'}]}]))
@@ -29,8 +33,8 @@ export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unkn
   current.on('closed',()=>{onInactive();if(win===current)win=undefined})
   current.once('ready-to-show',()=>{if(!current.isDestroyed())current.show()})
   try{
-   if(process.env.ELECTRON_RENDERER_URL)await current.loadURL(new URL('manager.html',process.env.ELECTRON_RENDERER_URL).toString())
-   else await current.loadFile(join(__dirname,'../renderer/manager.html'))
+   if(process.env.ELECTRON_RENDERER_URL){const url=new URL('manager.html',process.env.ELECTRON_RENDERER_URL);if(material)url.searchParams.set('glass','1');await current.loadURL(url.toString())}
+   else await current.loadFile(join(__dirname,'../renderer/manager.html'),{query:material?{glass:'1'}:{}})
   }catch(error){current.destroy();throw error}
  }
  return {open,notify,ignoreMenuShortcuts:(active:boolean)=>{if(win&&!win.isDestroyed())win.webContents.setIgnoreMenuShortcuts(active)},bounds:()=>win&&!win.isDestroyed()?win.getBounds():undefined,dispose:()=>clearTimeout(notification)}

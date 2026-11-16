@@ -6,6 +6,9 @@ import { recordedShortcut } from '../../shared/settings'
 import type { NoteSet } from '../../shared/sets'
 import { COLORS, PALETTE } from '../../shared/palette'
 import './manager.css'
+import './glass.css'
+// Main sets ?glass=1 only when the window itself carries a system material.
+if(new URLSearchParams(location.search).get('glass')==='1')document.documentElement.dataset.glass=''
 
 type Filter='all'|'visible'|'hidden'|'trash'
 type IconName='plus'|'search'|'settings'|'trash'|'arrow'|'close'|'undo'|'paper'|'check'|'locate'|'move'|'select'
