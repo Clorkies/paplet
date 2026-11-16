@@ -10,6 +10,13 @@ The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This
 
 ## Phase overview
 
+**Critical latest report:** At pushed head `9035066`, user reports Alt+Tab followed
+by dragging makes the note disappear. Native overlay reliability is FAIL by user
+report, not fixed or reproduced by the agent. The user also rejects the Click &
+drop sound, especially drop. See [current handoff](SESSION_HANDOFF_2026-11-15.md).
+This documentation-only investigation makes no runtime changes; prior 61-test
+results do not certify the native window lifecycle or acoustic quality.
+
 | Phase | Status | Delivered / remaining |
 | --- | --- | --- |
 | 0 — Native window and interaction feasibility | **Accepted conditional baseline** | Independent transparent windows, shaped hit regions, overlap prototype and dragging implemented. Appearance/motion accepted by user. DPI, click-through and focus matrix remains partly unverified. |
@@ -338,3 +345,7 @@ bounded/faded exit samples and work-area centering. Source comparisons preserve
 renderer dynamics and flow/sheet/motion/geometry/audio modules. Actual Preferences
 layout, reported native flicker remediation, input routing and transition quality
 remain NOT RUN/acceptance pending. Commit/push authorized; no merge performed.
+
+## Next phase request — main app UI refresh (2026-11-16)
+
+User asked to fold a further UI update of the main app (manager, preferences, trash) into the next phase, using an Apple "liquid glass" material language. This is explicit user direction and overrides the default no-glassmorphism rule for the app chrome only. Constraints: the approved paper motion stays untouched; glass is for manager/settings surfaces, not the notes themselves; use real translucency (Electron `backgroundMaterial`/acrylic where available, with an opaque fallback), keep contrast >= 4.5:1, honour high contrast and reduced transparency. Priority order: fix the Alt+Tab drag-disappear regression first, then rework click-drop sound, then the UI refresh. Needs a design pass (see MANAGER_DESIGN.md) before implementation.

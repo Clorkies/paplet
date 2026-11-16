@@ -2,6 +2,13 @@
 
 # Fresh-session handoff — Phase 2 to Phase 3
 
+> **CRITICAL LATEST STATUS (2026-11-15):** User reports that after Alt+Tab, trying
+> to drag a note makes it disappear; the always-on-top experience is broken.
+> Read [SESSION_HANDOFF_2026-11-15.md](SESSION_HANDOFF_2026-11-15.md) first. Root
+> cause is unconfirmed; this turn investigated source and wrote docs only, with
+> no runtime fix. Click & drop sound is also rejected, especially the drop. Do not
+> merge PR #3 based on passing automated tests. Preserve these local doc changes.
+
 Prepared 2026-11-14 after reviewing Claude's working tree.
 
 ## Start here
