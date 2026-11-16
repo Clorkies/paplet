@@ -16,19 +16,36 @@ export class ClickDropSound{
   source.onended=()=>{source.disconnect();this.playing.delete(source);if(!this.playing.size)this.timer=setTimeout(()=>{if(context.state==='running')void context.suspend().catch(()=>{})},180)}
   source.start()
  }
+ /** Paper, not a beep: a pad of paper lifted, then laid down with a soft slap and a short settle. */
  private makeBuffer(context:AudioContext,kind:'grab'|'drop'){
-  const duration=kind==='grab'?.075:.17,buffer=context.createBuffer(1,Math.ceil(context.sampleRate*duration),context.sampleRate),samples=buffer.getChannelData(0)
-  let seed=4217,phase=0,softNoise=0
+  const drop=kind==='drop',duration=drop?.2:.095,rate=context.sampleRate
+  const buffer=context.createBuffer(1,Math.ceil(rate*duration),rate),samples=buffer.getChannelData(0)
+  let seed=drop?9173:4217,low=0,slow=0,phase=0
   for(let i=0;i<samples.length;i++){
-   const t=i/context.sampleRate,drop=kind==='drop',attack=1-Math.exp(-t/.0008)
+   const t=i/rate
    seed=(Math.imul(seed,1664525)+1013904223)>>>0
-   const noise=seed/2147483648-1;softNoise+=.2*(noise-softNoise)
-   phase+=2*Math.PI*(drop?82+85*Math.exp(-t/ .014):350+900*Math.exp(-t/.004))/context.sampleRate
-   const body=Math.sin(phase)*Math.exp(-t/(drop?.031:.012))
-   const overtone=Math.sin(phase*(drop?2.38:1.71))*Math.exp(-t/.009)
-   const tick=(drop?softNoise:noise)*Math.exp(-t/(drop?.008:.002))
-   samples[i]=attack*(body*(drop?.28:.15)+overtone*.055+tick*.11)*Math.min(1,(duration-t)/.008)
+   const noise=seed/2147483648-1
+   // Band-limited noise: the difference of two one-pole filters keeps the papery 1-4 kHz band.
+   low+=(drop?.34:.5+.3*Math.min(1,t/.06))*(noise-low);slow+=.07*(noise-slow)
+   const band=low-slow
+   let v:number
+   if(drop){
+    const slap=(t0:number,gain:number)=>{const d=t-t0;return d<0?0:gain*(band*Math.exp(-d/.011)*(1-Math.exp(-d/.0006)))}
+    phase+=2*Math.PI*(190-80*Math.min(1,t/.05))/rate
+    const thump=Math.sin(phase)*Math.exp(-t/.02)*(1-Math.exp(-t/.0007))
+    const rustle=slow*Math.exp(-t/.05)*(1-Math.exp(-t/.004))
+    v=thump*.26+slap(0,1.5)+slap(.034,.55)+slap(.071,.22)+rustle*.9
+   }else{
+    // A quick lift: a brief swell of paper noise with a soft leading tick.
+    const swell=Math.min(1,t/.012)*Math.exp(-t/.032)
+    v=band*swell*1.5+Math.exp(-t/.0015)*band*.5
+   }
+   samples[i]=v*Math.min(1,(duration-t)/.012)
   }
+  // Normalise so the cue is clearly audible yet never harsh: drop is the more present cue.
+  let peak=0;for(const x of samples)peak=Math.max(peak,Math.abs(x))
+  const gain=peak>0?(drop?.44:.3)/peak:0
+  for(let i=0;i<samples.length;i++)samples[i]*=gain
   return buffer
  }
  stop(){
