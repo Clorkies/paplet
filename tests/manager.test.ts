@@ -4,6 +4,7 @@ import type { ManagerSnapshot } from '../src/shared/manager'
 const mock=vi.hoisted(()=>({handlers:new Map<string,Function>(),windows:[] as any[]}))
 vi.mock('electron',()=>({
  Menu:{buildFromTemplate:(template:unknown)=>template},
+ nativeTheme:{shouldUseHighContrastColors:false},
  ipcMain:{handle:(name:string,handler:Function)=>mock.handlers.set(name,handler)},
  BrowserWindow:class{
   webContents={mainFrame:{},isLoadingMainFrame:()=>false,send:vi.fn(),on:vi.fn(),setIgnoreMenuShortcuts:vi.fn()}
