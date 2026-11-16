@@ -16,31 +16,31 @@ export class ClickDropSound{
   source.onended=()=>{source.disconnect();this.playing.delete(source);if(!this.playing.size)this.timer=setTimeout(()=>{if(context.state==='running')void context.suspend().catch(()=>{})},180)}
   source.start()
  }
- /** Paper, not a beep: a pad of paper lifted, then laid down with a soft slap and a short settle. */
+ /** Clean tonal cues in the system-sound idiom: no noise, no hiss.
+  *  Grab: a crisp, glassy tick (short high partials over a small wooden body).
+  *  Drop: a rounded "pop" whose pitch falls as it lands, with a soft bell glint. */
  private makeBuffer(context:AudioContext,kind:'grab'|'drop'){
-  const drop=kind==='drop',duration=drop?.2:.095,rate=context.sampleRate
+  const drop=kind==='drop',duration=drop?.22:.05,rate=context.sampleRate
   const buffer=context.createBuffer(1,Math.ceil(rate*duration),rate),samples=buffer.getChannelData(0)
-  let seed=drop?9173:4217,low=0,slow=0,phase=0
+  const tau=2*Math.PI
+  let pop=0,pop2=0
+  // A decaying sine partial that starts at t0 with a click-free 1 ms attack.
+  const partial=(t:number,t0:number,freq:number,decay:number,gain:number)=>{const d=t-t0;return d<0?0:gain*Math.sin(tau*freq*d)*Math.exp(-d/decay)*(1-Math.exp(-d/.0009))}
   for(let i=0;i<samples.length;i++){
    const t=i/rate
-   seed=(Math.imul(seed,1664525)+1013904223)>>>0
-   const noise=seed/2147483648-1
-   // Band-limited noise: the difference of two one-pole filters keeps the papery 1-4 kHz band.
-   low+=(drop?.34:.5+.3*Math.min(1,t/.06))*(noise-low);slow+=.07*(noise-slow)
-   const band=low-slow
    let v:number
    if(drop){
-    const slap=(t0:number,gain:number)=>{const d=t-t0;return d<0?0:gain*(band*Math.exp(-d/.011)*(1-Math.exp(-d/.0006)))}
-    phase+=2*Math.PI*(190-80*Math.min(1,t/.05))/rate
-    const thump=Math.sin(phase)*Math.exp(-t/.02)*(1-Math.exp(-t/.0007))
-    const rustle=slow*Math.exp(-t/.05)*(1-Math.exp(-t/.004))
-    v=thump*.26+slap(0,1.5)+slap(.034,.55)+slap(.071,.22)+rustle*.9
+    // Pitch glides 520 -> 290 Hz in ~35 ms: the "landing" that makes a pop feel physical.
+    const f=290+230*Math.exp(-t/.012)
+    pop+=tau*f/rate;pop2+=tau*f*2.01/rate
+    const env=Math.exp(-t/.034)*(1-Math.exp(-t/.0012))
+    v=Math.sin(pop)*env*1+Math.sin(pop2)*env*.22*Math.exp(-t/.01)
+    // Bell glint just after contact: slightly inharmonic partials, quiet and short.
+    v+=partial(t,.008,2093,.075,.16)+partial(t,.008,3176,.04,.07)+partial(t,.008,5250,.016,.035)
    }else{
-    // A quick lift: a brief swell of paper noise with a soft leading tick.
-    const swell=Math.min(1,t/.012)*Math.exp(-t/.032)
-    v=band*swell*1.5+Math.exp(-t/.0015)*band*.5
+    v=partial(t,0,4300,.0016,.55)+partial(t,0,1850,.0055,.8)+partial(t,0,960,.009,.45)
    }
-   samples[i]=v*Math.min(1,(duration-t)/.012)
+   samples[i]=v*Math.min(1,(duration-t)/.01)
   }
   // Normalise so the cue is clearly audible yet never harsh: drop is the more present cue.
   let peak=0;for(const x of samples)peak=Math.max(peak,Math.abs(x))
