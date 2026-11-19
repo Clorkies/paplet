@@ -8,6 +8,7 @@ export class NoteAudio{
  private style:SoundStyle='rustle'
  private held=false
  configure(enabled:boolean,style:SoundStyle){if(this.enabled!==enabled||this.style!==style)this.stop();this.enabled=enabled;this.style=style;this.rustle.setEnabled(enabled&&style==='rustle')}
+ visibility(kind:'hide'|'show'){if(this.enabled)this.tactile.play(kind)}
  update(speed:number){if(this.enabled&&this.style==='rustle')this.rustle.update(speed)}
  drag(held:boolean){
   if(held===this.held)return

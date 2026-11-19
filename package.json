@@ -15,10 +15,6 @@
     "author": "",
     "license": "ISC",
     "type": "commonjs",
-    "dependencies": {
-        "react": "^19.3.1",
-        "react-dom": "^19.3.1"
-    },
     "build": {
         "appId": "local.stickee.prototype",
         "productName": "Stickee Prototype",
@@ -30,7 +26,21 @@
         },
         "win": {
             "target": "dir"
-        }
+        },
+        "extraResources": [
+            {
+                "from": "node_modules/react/LICENSE",
+                "to": "licenses/react.txt"
+            },
+            {
+                "from": "node_modules/react-dom/LICENSE",
+                "to": "licenses/react-dom.txt"
+            },
+            {
+                "from": "node_modules/scheduler/LICENSE",
+                "to": "licenses/scheduler.txt"
+            }
+        ]
     },
     "devDependencies": {
         "@types/node": "^26.6.6",
@@ -40,6 +50,8 @@
         "electron": "^45.3.1",
         "electron-builder": "^26.18.0",
         "electron-vite": "^6.0.0",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
         "typescript": "^7.0.2",
         "vite": "^8.3.8",
         "vitest": "^5.1.0"

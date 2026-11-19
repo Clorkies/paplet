@@ -2,12 +2,13 @@
 
 # Fresh-session handoff — Phase 2 to Phase 3
 
-> **CRITICAL LATEST STATUS (2026-11-15):** User reports that after Alt+Tab, trying
-> to drag a note makes it disappear; the always-on-top experience is broken.
-> Read [SESSION_HANDOFF_2026-11-15.md](SESSION_HANDOFF_2026-11-15.md) first. Root
-> cause is unconfirmed; this turn investigated source and wrote docs only, with
-> no runtime fix. Click & drop sound is also rejected, especially the drop. Do not
-> merge PR #3 based on passing automated tests. Preserve these local doc changes.
+> **Current status (2026-11-19).** The user manually retested Alt+Tab and
+> dragging and accepted the behavior. Close the disappearance report and reopen
+> only on a fresh occurrence. Earlier investigation entries below are historical.
+> The next release milestone is a Windows Store candidate. Start with portable
+> backup/restore and a disposable prototype-to-package migration test. The
+> current unsigned ZIP is the local QA baseline. SFX finalization is user-owned.
+> See [the original investigation](SESSION_HANDOFF_2026-11-15.md) for its evidence.
 
 Prepared 2026-11-14 after reviewing Claude's working tree.
 
@@ -176,3 +177,78 @@ remain unchanged. Build/typecheck and 61 automated tests pass; actual native
 flicker, compositor smoothness and visual Preferences acceptance are NOT RUN by
 the agent. Review in the morning. Commit/push to feat/note-manager is authorized;
 existing PR #3 targets dev, alongside PR #1 (paper) and #2 (core). Do not merge.
+
+## Windows investigation and manager changes, 2026-11-19
+
+Compared disposable Windows builds of b19d33a, 9035066 and 58183c9 and the
+working build. Tested settled notes and notes reopened after Hide. Also tried
+reopening during the downward transition on 9035066 and 58183c9. The reported
+disappearance did not reproduce. In the repeatable settled drag, the OS moved
+the note and hit-testing returned its HWND through release. Samples of the
+desktop pixels showed yellow paper. Electron reported visible, topmost, opacity
+1, on-screen bounds and a live renderer. One earlier reopened-note trial did
+not move on 9035066 but remained visible. The user's failure remains open.
+Keep PR #3 on hold pending a matching reproduction. Paper dynamics are untouched.
+
+Manager changes include the divided glass sidebar, pinned Preferences, square
+inspector, section-local Select, a responsive single row of folders, an All sets
+directory and additive note drops on folders. **Reversible experiment:** use
+top/bottom scroll fades on manager scrollports. High contrast keeps native bars.
+At two native window widths the row showed three and two folders. With 25 sets
+the directory showed all 25 and scrolling the sidebar left Preferences fixed.
+
+Removed the bell partials from the tactile sounds. After auditioning the first
+replacement, the user requested a softer, shorter release. The revised drop
+has a 15 ms decay and a 105 ms buffer. Hide/show have quieter cues and respect
+mute. Final listening acceptance is pending. Build/typecheck and 62 tests passed.
+The user subsequently rejected the percussive cue family. The current audition uses short pitched grab/release tones and airy hide/show transitions, with separate Preferences previews. Listening acceptance is pending.
+
+## Background performance
+
+See the 2026-11-19 measurements in MANUAL_TEST_MATRIX.md. Production Windows
+runs covered 1, 5, 10 and 20 visible notes, cold hidden notes, active dragging,
+settling, Hide and Trash. The main process skips the diagnostic polling timer
+during normal use and captures only the moving window during drag. Saved hidden
+notes allocate a renderer on demand. Cold Show, Locate, Show set, Trash/Restore,
+text retention, restored position persistence and tray Show All were exercised
+with disposable data. Build/typecheck and 62 tests passed.
+
+Priorities are still the intermittent Alt+Tab disappearance, same-session hidden
+memory, rare long frame intervals, then the remaining native acceptance matrix.
+SFX is paused for user feedback. Basic formatting and drawing are later work.
+
+## Hidden note memory and visibility tracing
+
+A note hidden for 30 seconds now releases its window if its editor was untouched.
+Focusing, selecting, scrolling or editing the text keeps that renderer resident
+for the session, preserving Chromium's selection, scroll position and undo stack.
+A quick reopen cancels the pending release. Actual memory savings depend on how
+many editors have been used. The previous 10-second post-hide measurements
+precede this grace period.
+
+In a disposable ten-note Windows check, eight unused editors were released,
+one hidden editor retained selection and undo, and a quickly reopened note kept
+its original window. A discarded window reopened with its saved text.
+For intermittent disappearance reports, the manual matrix now describes the
+opt-in local visibility trace. The user is handling SFX.
+
+In the final Windows run, all 20 Alt+Tab cycles had a foreground process outside
+the disposable Electron instance immediately before the grab. Every cycle moved
+the note, returned its HWND from hit-testing, and showed paper-colored pixels
+after release. All 20 had drag-entry, first-move and exit trace events. The
+intended test background was not confirmed as foreground; this does not identify
+the user's original foreground application. The reported disappearance remains
+open. Aggregate Electron private bytes fell from 579 MiB with ten freshly hidden
+notes to 310 MiB with one visible and one retained hidden editor after the grace
+period (two snapshots, manager open). Production build, typecheck and 62 tests pass.
+
+## Local Windows x64 package
+
+The packaged optimization pass and matched long-text drag measurements are in
+MANUAL_TEST_MATRIX.md. Local outputs are dist/win-unpacked/Stickee Prototype.exe
+and dist/Stickee-Windows-x64.zip. The ZIP contains the verified, unsigned Windows
+build. Both 165 Hz and 60 Hz displays passed the repeated-drag check. A rare
+first-grab presentation delay remains measurable. The user's intermittent Alt+Tab
+report remains open. No release, push or merge was performed.
+
+The dated publisher checklist, implementation calendar and submission gates are in [Windows Store launch plan](WINDOWS_STORE_LAUNCH_PLAN.md).

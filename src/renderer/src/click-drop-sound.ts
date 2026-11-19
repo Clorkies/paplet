@@ -1,51 +1,55 @@
-/** Two short, locally synthesized tactile cues. Buffers are reused, never looped. */
+type Cue = 'grab' | 'drop' | 'show' | 'hide'
+/** Local interface cues for note gestures and visibility. Buffers are reused, never looped. */
 export class ClickDropSound{
  private context?:AudioContext
- private buffers?:Record<'grab'|'drop',AudioBuffer>
+ private buffers:Partial<Record<Cue,AudioBuffer>>={}
  private playing=new Set<AudioBufferSourceNode>()
  private timer?:ReturnType<typeof setTimeout>
  private closed=false
- play(kind:'grab'|'drop'){
+ play(kind:Cue){
   if(this.closed)return
   clearTimeout(this.timer)
   const context=this.context??=new AudioContext({latencyHint:'interactive'})
-  if(!this.buffers)this.buffers={grab:this.makeBuffer(context,'grab'),drop:this.makeBuffer(context,'drop')}
+  const buffer=this.buffers[kind]??=this.makeBuffer(context,kind)
   if(context.state==='suspended')void context.resume().catch(()=>{})
-  const source=context.createBufferSource();source.buffer=this.buffers[kind]
+  const source=context.createBufferSource();source.buffer=buffer
   source.connect(context.destination);this.playing.add(source)
   source.onended=()=>{source.disconnect();this.playing.delete(source);if(!this.playing.size)this.timer=setTimeout(()=>{if(context.state==='running')void context.suspend().catch(()=>{})},180)}
   source.start()
  }
- /** Clean tonal cues in the system-sound idiom: no noise, no hiss.
-  *  Grab: a crisp, glassy tick (short high partials over a small wooden body).
-  *  Drop: a rounded "pop" whose pitch falls as it lands, with a soft bell glint. */
- private makeBuffer(context:AudioContext,kind:'grab'|'drop'){
-  const drop=kind==='drop',duration=drop?.22:.05,rate=context.sampleRate
-  const buffer=context.createBuffer(1,Math.ceil(rate*duration),rate),samples=buffer.getChannelData(0)
-  const tau=2*Math.PI
-  let pop=0,pop2=0
-  // A decaying sine partial that starts at t0 with a click-free 1 ms attack.
-  const partial=(t:number,t0:number,freq:number,decay:number,gain:number)=>{const d=t-t0;return d<0?0:gain*Math.sin(tau*freq*d)*Math.exp(-d/decay)*(1-Math.exp(-d/.0009))}
-  for(let i=0;i<samples.length;i++){
-   const t=i/rate
-   let v:number
-   if(drop){
-    // Pitch glides 520 -> 290 Hz in ~35 ms: the "landing" that makes a pop feel physical.
-    const f=290+230*Math.exp(-t/.012)
-    pop+=tau*f/rate;pop2+=tau*f*2.01/rate
-    const env=Math.exp(-t/.034)*(1-Math.exp(-t/.0012))
-    v=Math.sin(pop)*env*1+Math.sin(pop2)*env*.22*Math.exp(-t/.01)
-    // Bell glint just after contact: slightly inharmonic partials, quiet and short.
-    v+=partial(t,.008,2093,.075,.16)+partial(t,.008,3176,.04,.07)+partial(t,.008,5250,.016,.035)
-   }else{
-    v=partial(t,0,4300,.0016,.55)+partial(t,0,1850,.0055,.8)+partial(t,0,960,.009,.45)
+ private makeBuffer(context:AudioContext,kind:Cue){
+  const rate=context.sampleRate
+  const visibility=kind==='show'||kind==='hide'
+  const duration={grab:.062,drop:.075,show:.18,hide:.15}[kind]
+  const buffer=context.createBuffer(1,Math.round(rate*duration),rate)
+  const samples=buffer.getChannelData(0)
+  if(visibility){
+   // A soft band of moving air. Crossfade two filtered noise bands through
+   // a rounded envelope so the transition has no struck attack or bass hit.
+   let seed=7813,low=0,mid=0,high=0
+   const coefficient=(hz:number)=>1-Math.exp(-2*Math.PI*hz/rate)
+   const a=coefficient(650),b=coefficient(1350),c=coefficient(2800)
+   for(let i=0;i<samples.length;i++){
+    const progress=i/(samples.length-1)
+    const open=kind==='show'?progress:1-progress
+    seed=(Math.imul(seed,1664525)+1013904223)>>>0
+    const noise=seed/2147483648-1
+    low+=a*(noise-low);mid+=b*(noise-mid);high+=c*(noise-high)
+    const air=(mid-low)*(1-open)+(high-mid)*open
+    samples[i]=air*Math.sin(Math.PI*progress)**2*(kind==='show'?.32:.26)
    }
-   samples[i]=v*Math.min(1,(duration-t)/.01)
+  }else{
+   // Stable pitches and a soft crossfade give the two gestures a related voice.
+   const grab=kind==='grab'
+   const pitches=grab?[698.46,880]:[659.25,523.25]
+   for(let i=0;i<samples.length;i++){
+    const t=i/rate,progress=i/(samples.length-1)
+    const mix=.16+.62*progress
+    const tone=(1-mix)*Math.sin(2*Math.PI*pitches[0]*t)+mix*Math.sin(2*Math.PI*pitches[1]*t)
+    const envelope=Math.sin(Math.PI*progress)**2*(1-.42*progress)
+    samples[i]=tone*envelope*(grab?.15:.12)
+   }
   }
-  // Normalise so the cue is clearly audible yet never harsh: drop is the more present cue.
-  let peak=0;for(const x of samples)peak=Math.max(peak,Math.abs(x))
-  const gain=peak>0?(drop?.44:.3)/peak:0
-  for(let i=0;i<samples.length;i++)samples[i]*=gain
   return buffer
  }
  stop(){

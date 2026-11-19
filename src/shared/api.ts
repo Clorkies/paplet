@@ -7,6 +7,7 @@ export type NoteState={color:PaperColor;sound:boolean;soundStyle:SoundStyle}
 /** Native drag sample. Velocity is DIP/second; grab is window-relative DIP. */
 export type Motion={vx:number;vy:number;grabX:number;grabY:number;angle:number;curlSide:'left'|'right'}
 export interface StickeeAPI {
+ retainEditor():void
  ready():void
  config():Promise<Config>
  text(value:string,flush?:boolean):void
@@ -17,6 +18,7 @@ export interface StickeeAPI {
  drag(action:'start'|'end'):void
  experiment(mode:Mode,nativeDrag:boolean):Promise<void>
  quit():void
+ onVisibilityCue(callback:(kind:'hide'|'show')=>void):()=>void
  onDragState(callback:(dragging:boolean)=>void):()=>void
  onSettle(callback:()=>void):()=>void
  onLocate(callback:()=>void):()=>void

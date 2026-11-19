@@ -19,9 +19,17 @@ export function contains(p:Point, points:Point[]):boolean {
   }
   return inside
 }
+type RegionRect={x:number;y:number;width:number;height:number}
+// Consecutive scanlines with the same span describe a single native rectangle.
+function appendBand(rects:RegionRect[],x:number,y:number,width:number,height:number){
+ const previous=rects[rects.length-1]
+ if(previous&&previous.x===x&&previous.width===width&&y<=previous.y+previous.height){
+  previous.height=Math.max(previous.height,y+height-previous.y)
+ }else rects.push({x,y,width,height})
+}
 // One-DIP scanlines; same rotated polygon as SVG. Padding reserves a shadow fringe.
 export function region(angle:number,padding=0,side?:'left'|'right'){
-  const points=polygon(angle,side), rects:{x:number;y:number;width:number;height:number}[]=[]
+  const points=polygon(angle,side), rects:RegionRect[]=[]
   for(let y=0;y<SIZE;y++){
     const xs:number[]=[]
     for(let i=0,j=points.length-1;i<points.length;j=i++){
@@ -29,7 +37,8 @@ export function region(angle:number,padding=0,side?:'left'|'right'){
       if((a.y>scan)!==(b.y>scan)) xs.push(a.x+(scan-a.y)*(b.x-a.x)/(b.y-a.y))
     }
     if(xs.length){const x=Math.max(0,Math.floor(Math.min(...xs))-padding),right=Math.min(SIZE,Math.ceil(Math.max(...xs))+padding)
-      rects.push({x,y:Math.max(0,y-padding),width:right-x,height:Math.min(SIZE,y+1+padding)-Math.max(0,y-padding)})}
+      const top=Math.max(0,y-padding)
+      appendBand(rects,x,top,right-x,Math.min(SIZE,y+1+padding)-top)}
   }
   return rects
 }
@@ -59,6 +68,9 @@ export function movementRegion(){
    }
   }
  }
- dragEnvelope=rows.flatMap((row,y)=>row.right>row.left?[{x:row.left,y,width:row.right-row.left,height:1}]:[])
+ dragEnvelope=[]
+ for(const [y,{left,right}] of rows.entries()){
+  if(right>left)appendBand(dragEnvelope,left,y,right-left,1)
+ }
  return dragEnvelope
 }

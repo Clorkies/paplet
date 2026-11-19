@@ -12,40 +12,97 @@ import { NoteStore, emptyData, type SavedNote, type SavedData } from './store'
 import { COLORS, DEFAULT_COLOR, PALETTE, isPaperColor, type PaperColor } from '../shared/palette'
 import { springStep } from '../shared/motion'
 import { join } from 'node:path'
+import { writeFileSync } from 'node:fs'
 import { clampPosition, contains, polygon, region, movementRegion, SIZE } from '../shared/geometry'
 import { platform } from './platform'
 import type { Config, Mode } from '../shared/api'
-type Item={win:BrowserWindow;config:Config;record:SavedNote;entering:boolean;exiting?:boolean;rendererReady?:()=>void;appear?:(focus:boolean,animate:boolean)=>Promise<void>;dismiss?:()=>void;stopExit?:(hide:boolean)=>{y:number;opacity:number}|undefined;locateReady?:boolean;pendingLocate?:boolean;stopEntrance?:(arrive:boolean,captureInterrupted?:boolean)=>void}
-const notes=new Map<number,Item>()
+type Item={win:BrowserWindow;config:Config;record:SavedNote;retainEditor?:boolean;entering:boolean;exiting?:boolean;rendererReady?:()=>void;appear?:(focus:boolean,animate:boolean)=>Promise<void>;dismiss?:()=>void;stopExit?:(hide:boolean)=>{y:number;opacity:number}|undefined;locateReady?:boolean;pendingLocate?:boolean;stopEntrance?:(arrive:boolean,captureInterrupted?:boolean)=>void}
+const notes=new Map<number,Item>() // keyed by IPC sender
+const windowsByNote=new Map<string,Item>() // keyed by persisted note ID
 // Hit-testing experiments are developer tools, not part of an ordinary note.
 const diagnostics=process.env.STICKEE_DIAGNOSTICS==='1'||process.argv.includes('--diagnostics')
+// Opt-in, bounded event history. Saved locally on exit or from the tray.
+const traceEvents:string[]|undefined=process.argv.includes('--trace-visibility')?[]:undefined
+function appendTrace(window:number,event:string,state:object){
+ if(!traceEvents)return
+ traceEvents.push(JSON.stringify({time:new Date().toISOString(),window,event,...state}))
+ if(traceEvents.length>2048)traceEvents.shift()
+}
+function traceWindow(item:Item,event:string){
+ if(!traceEvents)return
+ const {win,record,entering,exiting}=item
+ const state=win.isDestroyed()?{destroyed:true}:{
+  hwnd:win.getNativeWindowHandle().toString('hex'),mode:item.config.mode,
+  visible:win.isVisible(),minimized:win.isMinimized(),focused:win.isFocused(),topmost:win.isAlwaysOnTop(),
+  opacity:win.getOpacity(),bounds:win.getBounds(),workArea:screen.getDisplayMatching(win.getBounds()).workArea,
+  crashed:win.webContents.isCrashed()
+ }
+ appendTrace(win.id,event,{hidden:record.hidden,entering,exiting:!!exiting,...state})
+}
+function saveVisibilityTrace(){
+ if(!traceEvents)return
+ for(const item of notes.values())traceWindow(item,'snapshot')
+ try{writeFileSync(join(app.getPath('userData'),'visibility-trace.jsonl'),traceEvents.join('\n')+'\n')}
+ catch(error){console.error('Could not save visibility trace',error)}
+}
 let manager:ReturnType<typeof createManager>|undefined,shortcutActive=false,recordingShortcut=false
 const DEFAULT_SHORTCUT='Control+Alt+N'
 const settings=()=>({sound:data.settings.sound,soundStyle:data.settings.soundStyle??'rustle',defaultColor:data.settings.defaultColor??DEFAULT_COLOR,shortcut:data.settings.shortcut??DEFAULT_SHORTCUT})
 const changed=()=>manager?.notify()
 let store:NoteStore,data:SavedData=emptyData(),tray:Tray,quitting=false,saveTimer:ReturnType<typeof setTimeout>|undefined,saveWarning=false,persistenceReady=false
 function flush(){
- clearTimeout(saveTimer)
+ clearTimeout(saveTimer);saveTimer=undefined
  if(!persistenceReady)return true
  try{store.save(data);saveWarning=false;changed();return true}catch(error){console.error(error);if(!saveWarning){saveWarning=true;dialog.showErrorBox('Stickee could not save notes',String(error)+'\nKeep Stickee open and check disk access.')}changed();return false}
 }
-function save(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250);changed()}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250)}
+function save(){scheduleSave();changed()}
 // A note that is still rising into place keeps its destination as its saved position.
-function capture(){for(const {win,record,config,entering} of notes.values()){if(record.deletedAt!==undefined)continue;if(!entering&&!notes.get(win.webContents.id)?.exiting){const b=win.getBounds();record.x=b.x;record.y=b.y}record.angle=config.angle;record.curlSide=config.curlSide}}
+function captureNote({win,record,config,entering,exiting}:Item){
+ if(record.deletedAt!==undefined)return false
+ let changed=record.angle!==config.angle||record.curlSide!==config.curlSide
+ if(!entering&&!exiting){
+  const {x,y}=win.getBounds()
+  changed=changed||record.x!==x||record.y!==y
+  record.x=x;record.y=y
+ }
+ record.angle=config.angle;record.curlSide=config.curlSide
+ return changed
+}
+function capture(){for(const item of notes.values())captureNote(item)}
 function pushState(item:Item){item.config.sound=data.settings.sound;item.config.soundStyle=settings().soundStyle;if(!item.win.isDestroyed())item.win.webContents.send('state',{color:item.config.color,sound:item.config.sound,soundStyle:item.config.soundStyle})}
+// A batch of notes shares one audible visibility transition.
+const lastCue={show:-Infinity,hide:-Infinity}
+function visibilityCue(win:BrowserWindow,kind:'show'|'hide'){
+ const now=performance.now()
+ if(!settings().sound||now-lastCue[kind]<120)return
+ lastCue[kind]=now
+ win.webContents.send('visibility-cue',kind)
+}
 function setColor(item:Item,color:PaperColor){item.record.color=color;item.config.color=color;pushState(item);save()}
 function setSound(enabled:boolean){data.settings.sound=enabled;for(const item of notes.values())pushState(item);buildTray();save()}
 function buildTray(){
- tray?.setContextMenu(Menu.buildFromTemplate([{label:'Open Stickee',click:()=>openManager()},{type:'separator'},{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Undo delete',enabled:trashed(data).length>0,click:()=>{const note=trashed(data)[0];if(note)void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}},{label:'Trash',submenu:trashed(data).length?trashed(data).map(note=>({label:(note.text.trim().split('\n')[0]||'Untitled note').slice(0,60).replace(/&/g,'&&'),click:()=>{void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}})):[{label:'Trash is empty',enabled:false}]},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},{label:'Quit',click:()=>app.quit()}]))
+ tray?.setContextMenu(Menu.buildFromTemplate([{label:'Open Stickee',click:()=>openManager()},{type:'separator'},{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Undo delete',enabled:trashed(data).length>0,click:()=>{const note=trashed(data)[0];if(note)void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}},{label:'Trash',submenu:trashed(data).length?trashed(data).map(note=>({label:(note.text.trim().split('\n')[0]||'Untitled note').slice(0,60).replace(/&/g,'&&'),click:()=>{void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}})):[{label:'Trash is empty',enabled:false}]},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},...(traceEvents?[{label:'Save visibility trace',click:saveVisibilityTrace}]:[]),{label:'Quit',click:()=>app.quit()}]))
 }
-function showAll(){for(const item of notes.values()){if(item.record.deletedAt!==undefined)continue;item.record.hidden=false;void item.appear?.(false,true).catch(error=>dialog.showErrorBox('Could not show note',String(error)))}save()}
+async function presentRecord(record:SavedNote,focus:boolean){
+ const item=windowsByNote.get(record.id)
+ return item?item.appear?.(focus,true):createWindow(record,focus,true,true)
+}
+function showAll(){
+ for(const record of data.notes){
+  if(record.deletedAt!==undefined)continue
+  record.hidden=false
+  void presentRecord(record,false).catch(error=>dialog.showErrorBox('Could not show note',String(error)))
+ }
+ save()
+}
 function hideAll(){capture();const active=[...notes.values()].filter(item=>item.record.deletedAt===undefined),old=active.map(item=>item.record.hidden);for(const item of active)item.record.hidden=true;if(!flush()){active.forEach((item,i)=>item.record.hidden=old[i]);return}for(const item of active)item.dismiss?.()}
 function deleteNote(item:Item){return trashRecord(item.record)}
 function trashRecord(record:SavedNote){
  capture()
  const deletedAt=Math.max(Date.now(),(trashed(data)[0]?.deletedAt??-1)+1)
  if(!setTrashed(record,true,flush,deletedAt))return false
- const item=[...notes.values()].find(item=>item.record.id===record.id)
+ const item=windowsByNote.get(record.id)
  if(item){item.win.hide();item.win.destroy()}
  buildTray();changed();return true
 }
@@ -66,9 +123,7 @@ function newNote(color:PaperColor=settings().defaultColor,setId?:string,center=f
 async function showNote(record:SavedNote){
  const wasHidden=record.hidden;record.hidden=false
  if(!flush()){record.hidden=wasHidden;throw new Error('Could not save note visibility')}
- const item=[...notes.values()].find(item=>item.record.id===record.id)
- if(item)await item.appear?.(true,true)
- else await createWindow(record,true,true)
+ await presentRecord(record,true)
  changed()
 }
 async function batchAction(ids:unknown,operation:unknown):Promise<ManagerResult>{
@@ -82,12 +137,12 @@ async function batchAction(ids:unknown,operation:unknown):Promise<ManagerResult>
  targets=applyBatch(data,ids,operation as BatchOperation,flush)
  // Native effects follow the durable transaction, never a half-saved batch.
  const results=await Promise.allSettled(targets.map(async record=>{
-  const item=[...notes.values()].find(item=>item.record.id===record.id)
+  const item=windowsByNote.get(record.id)
   if(operation==='trash'){if(item){item.win.hide();item.win.destroy()}}
   else if(operation==='hide')item?.dismiss?.()
   else if(operation==='show'||operation==='restore'){
    if(item)await item.appear?.(false,true)
-   else await createWindow(record,false,true)
+   else await createWindow(record,false,true,true)
   }
  }))
  buildTray();changed()
@@ -95,7 +150,7 @@ async function batchAction(ids:unknown,operation:unknown):Promise<ManagerResult>
  return {ok:true}
 }
 async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResult>{
- let item=[...notes.values()].find(item=>item.record.id===record.id)
+ let item=windowsByNote.get(record.id)
  if(item?.entering||item?.exiting)return {ok:false,error:'Let this note finish moving before locating it.'}
  const bounds=manager?.bounds(),destination=bounds?screen.getDisplayMatching(bounds):screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
  const old={x:record.x,y:record.y,hidden:record.hidden}
@@ -105,7 +160,7 @@ async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResu
  if(moved){const p=clampPosition({x:destination.workArea.x+80,y:destination.workArea.y+80},destination.workArea);record.x=p.x;record.y=p.y}
  record.hidden=false
  if(!flush()){Object.assign(record,old);return {ok:false,error:'Could not save note visibility or position.'}}
- if(!item){await createWindow(record);item=[...notes.values()].find(item=>item.record.id===record.id)}
+ if(!item){await createWindow(record);item=windowsByNote.get(record.id)}
  if(!item)return {ok:false,error:'Could not open this note.'}
  if(moved)platform.move(item.win,record.x,record.y)
  item.win.showInactive();platform.keepOnTop(item.win,true)
@@ -157,7 +212,7 @@ async function managerAction(value:unknown):Promise<ManagerResult>{
  if(record.deletedAt!==undefined)return {ok:false,error:'Restore this note from Trash first.'}
  if(input.type==='trash')return {ok:trashRecord(record)}
  if(input.type==='show'){await showNote(record);return {ok:true}}
- const item=[...notes.values()].find(item=>item.record.id===record.id)
+ const item=windowsByNote.get(record.id)
  if(input.type==='hide'){
   const hidden=record.hidden;record.hidden=true
   if(!flush()){record.hidden=hidden;return {ok:false,error:'Could not save note visibility.'}}
@@ -187,7 +242,7 @@ async function load(win:BrowserWindow,query:Record<string,string>){
  else await win.loadFile(join(__dirname,'../renderer/index.html'),{query})
 }
 function recover(){for(const item of notes.values()){item.stopEntrance?.(true);item.stopExit?.(true);const b=item.win.getBounds(),area=screen.getDisplayMatching(b).workArea,p=clampPosition(b,area);platform.move(item.win,p.x,p.y)}capture();save()}
-async function createWindow(record:SavedNote,focus=false,entrance=false){
+async function createWindow(record:SavedNote,focus=false,entrance=false,playShowCue=false){
  const area=screen.getDisplayMatching({x:record.x,y:record.y,width:SIZE,height:SIZE}).workArea
  const p=clampPosition(record,area);record.x=p.x;record.y=p.y
   const win=new BrowserWindow({...p,width:SIZE,height:SIZE,frame:false,transparent:true,thickFrame:false,skipTaskbar:true,backgroundColor:'#00000000',hasShadow:false,resizable:false,maximizable:false,fullscreenable:false,show:false,alwaysOnTop:true,webPreferences:{preload:join(__dirname,'../preload/index.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,autoplayPolicy:'no-user-gesture-required'}})
@@ -195,6 +250,21 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
   try{config.status=platform.apply(win,config.angle,config.mode,config.curlSide)}catch(error){config.status=`FAILED: ${String(error)}`}
   const id=win.webContents.id
   const item:Item={win,config,record,entering:false}
+  if(traceEvents){
+   const windowId=win.id
+   win.on('close',()=>traceWindow(item,'close-request'))
+   win.once('closed',()=>appendTrace(windowId,'closed',{destroyed:true}))
+   win.on('focus',()=>traceWindow(item,'focus'))
+   win.on('blur',()=>traceWindow(item,'blur'))
+   win.on('show',()=>traceWindow(item,'show'))
+   win.on('hide',()=>traceWindow(item,'hide'))
+   win.on('restore',()=>traceWindow(item,'restore'))
+   win.on('minimize',()=>traceWindow(item,'minimize'))
+   win.on('always-on-top-changed',()=>traceWindow(item,'always-on-top-changed'))
+   win.on('unresponsive',()=>traceWindow(item,'unresponsive'))
+   win.on('responsive',()=>traceWindow(item,'responsive'))
+   win.webContents.on('render-process-gone',(_event,details)=>traceWindow(item,'renderer-'+details.reason))
+  }
   let painted=false,rendered=false,readyResolve!:()=>void,readyReject!:(error:Error)=>void
   const ready=new Promise<void>((resolve,reject)=>{readyResolve=resolve;readyReject=reject})
   const checkReady=()=>{if(painted&&rendered)readyResolve()}
@@ -202,7 +272,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
   win.once('ready-to-show',()=>{painted=true;checkReady()})
   const readyTimeout=setTimeout(()=>readyReject(new Error('Note renderer did not become ready')),15000)
   void ready.then(()=>clearTimeout(readyTimeout),()=>clearTimeout(readyTimeout))
-  notes.set(id,item);secure(win)
+  notes.set(id,item);windowsByNote.set(record.id,item);secure(win)
   win.webContents.on('did-start-loading',()=>{item.locateReady=false})
   // Reassert the native topmost band at activation boundaries. Never call
   // show/focus from blur: another application must keep keyboard focus.
@@ -216,11 +286,11 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
    setImmediate(()=>{if(!win.isDestroyed()&&win.isFocused()&&!record.hidden)platform.keepOnTop(win,true)})
   })
   win.on('blur',()=>{setImmediate(()=>{if(!record.hidden)platform.keepOnTop(win)})})
-  let movementEnvelope=false
+  let movementEnvelope=false,traceFirstMove=false
   const interruptHide=()=>{if(!item.exiting)return;item.stopExit?.(false);record.hidden=false;win.setOpacity(1);capture();save()}
   if(process.platform==='win32'){
-   win.hookWindowMessage(0x0231,()=>{interruptHide();item.stopEntrance?.(false);previous=win.getBounds();lastMotion=performance.now();directionDistance=0;clearTimeout(shapeTimer);movementEnvelope=true;if(config.mode==='shape'){win.setShape(movementRegion());platform.keepOnTop(win)}win.webContents.send('drag-state',true)})
-   win.hookWindowMessage(0x0232,()=>{win.webContents.send('drag-state',false);win.webContents.send('settle');clearTimeout(shapeTimer);shapeTimer=setTimeout(()=>{movementEnvelope=false;if(!win.isDestroyed())platform.apply(win,config.angle,config.mode,config.curlSide)},1400)})
+   win.hookWindowMessage(0x0231,()=>{if(traceEvents){traceWindow(item,'drag-enter');traceFirstMove=true}interruptHide();item.stopEntrance?.(false);previous=win.getBounds();lastMotion=performance.now();directionDistance=0;clearTimeout(shapeTimer);movementEnvelope=true;if(config.mode==='shape'){win.setShape(movementRegion());platform.keepOnTop(win)}win.webContents.send('drag-state',true)})
+   win.hookWindowMessage(0x0232,()=>{if(traceEvents){traceWindow(item,'drag-exit');traceFirstMove=false}win.webContents.send('drag-state',false);win.webContents.send('settle');clearTimeout(shapeTimer);shapeTimer=setTimeout(()=>{movementEnvelope=false;if(!win.isDestroyed())platform.apply(win,config.angle,config.mode,config.curlSide)},1400)})
   }
   // OS owns the drag loop. Only notify the renderer once movement has stopped.
   let settleTimer:ReturnType<typeof setTimeout>|undefined
@@ -254,7 +324,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
    clearTimeout(settleTimer)
    settleTimer=setTimeout(()=>{if(!win.isDestroyed())win.webContents.send('settle')},120)
   })
-  win.on('move',()=>{if(!item.entering&&!item.exiting){capture();save()}if(!config.nativeDrag)return;clearTimeout(settleTimer);settleTimer=setTimeout(()=>{if(!win.isDestroyed())win.webContents.send('settle')},100)})
+  win.on('move',()=>{if(traceFirstMove){traceFirstMove=false;traceWindow(item,'first-drag-move')}if(!item.entering&&!item.exiting&&captureNote(item))scheduleSave();if(!config.nativeDrag)return;clearTimeout(settleTimer);settleTimer=setTimeout(()=>{if(!win.isDestroyed())win.webContents.send('settle')},100)})
   // New notes rise from the lower edge of the work area and settle at their
   // destination. The spring runs here because the window itself moves; the
   // renderer receives the same motion samples as a drag, so the paper flexes.
@@ -292,6 +362,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
   }
   item.dismiss=()=>{
    if(item.exiting||win.isDestroyed()||!win.isVisible())return
+   visibilityCue(win,'hide')
    item.stopEntrance?.(false,false)
    if(systemPreferences.getAnimationSettings().prefersReducedMotion){win.hide();win.setOpacity(1);platform.move(win,record.x,record.y);return}
    const start=win.getBounds(),area=screen.getDisplayMatching(start).workArea,endY=area.y+area.height+20,began=performance.now(),opacity=win.getOpacity()
@@ -313,14 +384,30 @@ async function createWindow(record:SavedNote,focus=false,entrance=false){
    },8)
    item.stopExit=finish
   }
-  item.appear=(focus,animate)=>presentNote({ready,destroyed:()=>win.isDestroyed(),visible:()=>win.isVisible(),focused:()=>win.isFocused(),entering:()=>item.entering,interruptExit:()=>item.stopExit?.(false),entrance:startEntrance,show:focus=>{if(focus)win.show();else win.showInactive()},focus:()=>{if(win.isMinimized())win.restore();win.focus()}},focus,animate)
+  let loaded=playShowCue
+  item.appear=(focus,animate)=>presentNote({ready,destroyed:()=>win.isDestroyed(),visible:()=>win.isVisible(),focused:()=>win.isFocused(),entering:()=>item.entering,interruptExit:()=>item.stopExit?.(false),entrance:resume=>{if(loaded)visibilityCue(win,'show');startEntrance(resume)},show:focus=>{if(focus)win.show();else win.showInactive()},focus:()=>{if(win.isMinimized())win.restore();win.focus()}},focus,animate)
   const hideNote=()=>{capture();const hidden=record.hidden;record.hidden=true;if(flush())item.dismiss?.();else record.hidden=hidden}
-  win.on('hide',()=>{item.stopEntrance?.(true);item.stopExit?.(true)})
-  win.on('closed',()=>{readyReject(new Error('Note window closed'));clearTimeout(readyTimeout);clearTimeout(settleTimer);clearTimeout(shapeTimer);item.stopEntrance?.(true);item.stopExit?.(false);notes.delete(id);if(drag?.id===id)drag=undefined})
-  win.on('blur',()=>{if(drag?.id===id)drag=undefined;capture();flush()})
+  let discardTimer:ReturnType<typeof setTimeout>|undefined
+  win.on('show',()=>clearTimeout(discardTimer))
+  win.on('hide',()=>{
+   item.stopEntrance?.(true);item.stopExit?.(true)
+   clearTimeout(discardTimer)
+   if(record.hidden&&!item.retainEditor&&!diagnostics){
+    // Keep recent hides warm. An untouched editor can be recreated from the
+    // main-owned record. A used editor owns Chromium selection and undo state.
+    discardTimer=setTimeout(()=>{
+     if(!quitting&&!win.isDestroyed()&&!win.isVisible()&&record.hidden&&!item.retainEditor&&!saveWarning){
+      if(traceEvents)traceWindow(item,'discard-hidden')
+      win.destroy()
+     }
+    },30_000)
+   }
+  })
+  win.on('closed',()=>{clearTimeout(discardTimer);readyReject(new Error('Note window closed'));clearTimeout(readyTimeout);clearTimeout(settleTimer);clearTimeout(shapeTimer);item.stopEntrance?.(true);item.stopExit?.(false);notes.delete(id);windowsByNote.delete(record.id);if(drag?.id===id)drag=undefined})
+  win.on('blur',()=>{if(drag?.id===id)drag=undefined;if(captureNote(item)||saveTimer||saveWarning)flush()})
   win.on('close',event=>{if(!quitting){event.preventDefault();hideNote()}})
   win.webContents.on('context-menu',()=>Menu.buildFromTemplate([{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'},{type:'separator'},{label:'Paper color',submenu:COLORS.map(color=>({label:PALETTE[color].label,type:'radio' as const,checked:config.color===color,click:()=>setColor(item,color)}))},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:menuItem=>setSound(menuItem.checked)},{type:'separator'},{label:'New note',click:()=>newNote(config.color)},{label:'Move to Trash',click:()=>deleteNote(item)},{label:'Hide note',click:hideNote}]).popup({window:win}))
-  try{await load(win,{});await ready;if(!record.hidden)await item.appear(focus,entrance)}catch(error){if(!win.isDestroyed())win.destroy();throw error}
+  try{await load(win,{});await ready;if(!record.hidden)await item.appear(focus,entrance);loaded=true}catch(error){if(!win.isDestroyed())win.destroy();throw error}
 }
 async function start(){
  store=new NoteStore(join(app.getPath('userData'),'data'));data=store.load();persistenceReady=true
@@ -336,10 +423,10 @@ async function start(){
  shortcutActive=globalShortcut.register(settings().shortcut,()=>newNote())
  if(!shortcutActive)void dialog.showMessageBox({type:'warning',message:`${settings().shortcut} is already in use.`,detail:'Create notes from the Stickee tray menu instead.'})
  movementRegion() // build the cached drag envelope before the first drag needs it
- for(const record of data.notes)if(record.deletedAt===undefined)await createWindow(record)
+ for(const record of data.notes)if(record.deletedAt===undefined&&!record.hidden&&!windowsByNote.has(record.id))await createWindow(record)
  if(data.notes.length===0)newNote()
  save()
- timer=setInterval(()=>{
+ if(diagnostics)timer=setInterval(()=>{
   if(!drag&&![...notes.values()].some(item=>item.config.mode==='ignore'))return
   const cursor=screen.getCursorScreenPoint()
   if(drag){const item=notes.get(drag.id);if(item)platform.move(item.win,cursor.x-drag.dx,cursor.y-drag.dy)}
@@ -364,10 +451,17 @@ ipcMain.handle('experiment',(event,mode:unknown,nativeDrag:unknown)=>{
 })
 ipcMain.on('note-ready',event=>{const item=notes.get(event.sender.id);if(item&&event.senderFrame===event.sender.mainFrame)item.rendererReady?.()})
 ipcMain.on('locate-ready',event=>{const item=notes.get(event.sender.id);if(!item||event.senderFrame!==event.sender.mainFrame)return;item.locateReady=true;if(item.pendingLocate){item.pendingLocate=false;item.win.webContents.send('locate')}})
+ipcMain.on('retain-editor',event=>{
+ const item=notes.get(event.sender.id)
+ if(item&&event.senderFrame===event.sender.mainFrame)item.retainEditor=true
+})
 ipcMain.on('text',(event,value:unknown,immediate:unknown)=>{
  const item=notes.get(event.sender.id)
  if(!item||item.record.deletedAt!==undefined||event.senderFrame!==event.sender.mainFrame||typeof value!=='string'||value.length>1_000_000||typeof immediate!=='boolean')return
- item.record.text=value;item.config.text=value;if(immediate)flush();else save()
+ item.retainEditor=true
+ if(item.record.text===value){if(immediate&&(saveTimer||saveWarning))flush();return}
+ item.record.text=value;item.config.text=value
+ if(immediate)flush();else save()
 })
 // A note made from another note starts on the same paper.
 ipcMain.on('create',event=>{const item=notes.get(event.sender.id);if(item&&event.senderFrame===event.sender.mainFrame)newNote(item.config.color)})
@@ -381,4 +475,4 @@ else {
 }
 app.on('window-all-closed',()=>{})
 app.on('before-quit',event=>{capture();if(!flush()){event.preventDefault();quitting=false;return}quitting=true})
-app.on('will-quit',()=>{clearInterval(timer);clearTimeout(saveTimer);manager?.dispose();globalShortcut.unregisterAll();tray?.destroy()})
+app.on('will-quit',()=>{saveVisibilityTrace();clearInterval(timer);clearTimeout(saveTimer);manager?.dispose();globalShortcut.unregisterAll();tray?.destroy()})

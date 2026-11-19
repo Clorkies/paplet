@@ -33,3 +33,16 @@ it('does not allocate while muted and cancels active cues on mute, blur or mode 
  expect(contexts[0].sources).toHaveLength(2)
  sound.configure(true,'rustle');sound.dispose()
 })
+it('plays distinct visibility cues in either style and respects mute',()=>{
+ vi.stubGlobal('AudioContext',FakeContext)
+ const sound=new NoteAudio()
+ sound.configure(false,'rustle');sound.visibility('show')
+ expect(contexts).toHaveLength(0)
+ sound.configure(true,'rustle');sound.visibility('show');sound.visibility('hide')
+ const sources=contexts[0].sources
+ expect(sources).toHaveLength(2)
+ expect(sources[0].buffer).not.toBe(sources[1].buffer)
+ sound.configure(true,'click-drop');sound.visibility('show')
+ expect(sources[2].buffer).toBe(sources[0].buffer)
+ sound.dispose()
+})

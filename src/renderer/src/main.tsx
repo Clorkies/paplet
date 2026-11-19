@@ -22,18 +22,28 @@ function App(){
  },[])
 
  const [overflow,setOverflow]=useState({above:false,below:false})
- const checkOverflow=()=>{const el=editor.current;if(el)setOverflow({above:el.scrollTop>2,below:el.scrollHeight-el.clientHeight-el.scrollTop>2})}
+ const editorRetained=useRef(false)
+ const retainEditor=()=>{
+  if(!editorRetained.current){editorRetained.current=true;window.stickee.retainEditor()}
+ }
+ const checkOverflow=()=>{
+  const el=editor.current
+  if(!el)return
+  const above=el.scrollTop>2,below=el.scrollHeight-el.clientHeight-el.scrollTop>2
+  setOverflow(previous=>previous.above===above&&previous.below===below?previous:{above,below})
+ }
  useEffect(()=>{if(!config||!editor.current)return;checkOverflow();const observer=new ResizeObserver(checkOverflow);observer.observe(editor.current);return()=>observer.disconnect()},[!config])
  const sound=useRef<NoteAudio|null>(null)
  useEffect(()=>{
   const voice=new NoteAudio();sound.current=voice
   const offMotion=window.stickee.onMotion(({vx,vy})=>{try{voice.update(Math.hypot(vx,vy))}catch{voice.stop()}})
+  const offCue=window.stickee.onVisibilityCue(kind=>{try{voice.visibility(kind)}catch{voice.stop()}})
   const offDrag=window.stickee.onDragState(dragging=>{if(dragging)setPicking(false);try{voice.drag(dragging)}catch{voice.stop()}})
   // Colour and the sound preference are owned by the main process; it also
   // changes them from the context and tray menus.
   const offState=window.stickee.onState(state=>{setColor(state.color);voice.configure(state.sound,state.soundStyle)})
   const stop=()=>{voice.stop();setPicking(false)};window.addEventListener('blur',stop)
-  return()=>{offMotion();offDrag();offState();window.removeEventListener('blur',stop);voice.dispose();sound.current=null}
+  return()=>{offMotion();offDrag();offCue();offState();window.removeEventListener('blur',stop);voice.dispose();sound.current=null}
  },[])
  const stopEditing=()=>{editor.current?.blur();paper.current?.focus({preventScroll:true})}
  const animation=useRef<Animation|null>(null)
@@ -133,7 +143,7 @@ function App(){
  return <div className={debug?'bounds':''}><div ref={paper} tabIndex={-1} className="paper" data-located={located?'true':undefined} data-curl-side={curlSide} style={{transform:`rotate(${config.angle}deg)`,'--paper-a':tone.top,'--paper-b':tone.bottom,'--curl-a':tone.curlLight,'--curl-b':tone.curlMid,'--curl-c':tone.curlDark,'--ink':tone.ink} as React.CSSProperties}>
  <svg className="sheet" viewBox="0 0 360 360" aria-hidden="true"><defs><linearGradient id="paper" x2=".2" y2="1"><stop style={{stopColor:'var(--paper-a)'}}/><stop offset="1" style={{stopColor:'var(--paper-b)'}}/></linearGradient><linearGradient id="curl" gradientUnits="userSpaceOnUse" x1="283" y1="270" x2="305" y2="302"><stop style={{stopColor:'var(--curl-a)'}}/><stop offset=".48" style={{stopColor:'var(--curl-b)'}}/><stop offset=".75" style={{stopColor:'var(--curl-c)'}}/><stop offset="1" style={{stopColor:'var(--curl-a)'}}/></linearGradient><linearGradient ref={bendLight} id="bend" gradientUnits="userSpaceOnUse" x1="180" y1="65" x2="180" y2="330"><stop stopColor="#3a2a10" stopOpacity="0"/><stop offset=".3" stopColor="#3a2a10" stopOpacity=".07"/><stop offset=".6" stopColor="#fffdf2" stopOpacity=".2"/><stop offset=".88" stopColor="#3a2a10" stopOpacity=".06"/><stop offset="1" stopColor="#3a2a10" stopOpacity="0"/></linearGradient><filter id="curlShadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4"/></filter><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="1" dy="3" stdDeviation="2.5" floodOpacity=".24"/></filter></defs><path id="paper-surface" ref={surface} d={rest.path} fill="url(#paper)" filter="url(#shadow)"/><path ref={shade} d={rest.path} fill="url(#bend)" opacity="0"/><g ref={curl} transform={rest.curlTransform}><path d="M255 320 Q285 309 320 265 Q312 297 269 320 Z" fill="#57462f" opacity=".24" filter="url(#curlShadow)"/><path d="M255 320 C282 312 305 283 320 265 C307 274 295 265 285 254 C282 282 271 305 255 320 Z" fill="url(#curl)"/><path d="M255 320 C282 312 305 283 320 265" fill="none" style={{stroke:'var(--curl-a)'}} strokeWidth=".7" opacity=".7"/></g></svg>
  <div className={config.nativeDrag?'grab native':'grab'} onPointerDown={e=>{if(e.button!==0||config.nativeDrag)return;stopEditing();animation.current?.cancel();active.current=true;paper.current?.setAttribute('data-dragging','true');e.currentTarget.setPointerCapture(e.pointerId);window.stickee.drag('start')}} onPointerMove={e=>{if(active.current&&!matchMedia('(prefers-reduced-motion: reduce)').matches)paper.current!.style.transform=`rotate(${config.angle+Math.max(-.65,Math.min(.65,e.movementX*.1))}deg)`}} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop}><span className="grip" aria-hidden="true"/></div>
- <div ref={content} className="content"><div className="editor-wrap"><textarea ref={editor} onInput={e=>{checkOverflow();window.stickee.text(e.currentTarget.value)}} onBlur={e=>window.stickee.text(e.currentTarget.value,true)} onScroll={checkOverflow} onKeyUp={checkOverflow} aria-describedby="scroll-hint" aria-label="Note text" spellCheck={false} defaultValue={config.text} placeholder="Keep a thought here..." maxLength={1000000}/><span className={`scroll-cue above ${overflow.above?'visible':''}`} aria-hidden="true"/><span className={`scroll-cue below ${overflow.below?'visible':''}`} aria-hidden="true"/><span id="scroll-hint" className="sr-only">{overflow.above||overflow.below?'More text available. Scroll or use arrow keys to read.':''}</span></div>
+ <div ref={content} className="content"><div className="editor-wrap"><textarea ref={editor} onFocus={retainEditor} onSelect={retainEditor} onInput={e=>{checkOverflow();window.stickee.text(e.currentTarget.value)}} onBlur={e=>window.stickee.text(e.currentTarget.value,true)} onScroll={()=>{retainEditor();checkOverflow()}} aria-describedby="scroll-hint" aria-label="Note text" spellCheck={false} defaultValue={config.text} placeholder="Keep a thought here..." maxLength={1000000}/><span className={`scroll-cue above ${overflow.above?'visible':''}`} aria-hidden="true"/><span className={`scroll-cue below ${overflow.below?'visible':''}`} aria-hidden="true"/><span id="scroll-hint" className="sr-only">{overflow.above||overflow.below?'More text available. Scroll or use arrow keys to read.':''}</span></div>
  <div className="note-actions" onKeyDown={e=>{if(e.key==='Escape'&&picking){e.preventDefault();e.stopPropagation();closePicker()}}}>{picking
   ?<div className="swatches" role="radiogroup" aria-label="Paper color" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setPicking(false)}}>{COLORS.map(option=><button key={option} role="radio" tabIndex={option===color?0:-1} aria-checked={option===color} onKeyDown={e=>{const delta=['ArrowRight','ArrowDown'].includes(e.key)?1:['ArrowLeft','ArrowUp'].includes(e.key)?-1:0;if(!delta)return;e.preventDefault();const next=COLORS[(COLORS.indexOf(option)+delta+COLORS.length)%COLORS.length];setColor(next);window.stickee.color(next);const buttons=e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]');buttons?.[COLORS.indexOf(next)].focus()}} aria-label={PALETTE[option].label} title={PALETTE[option].label} className="swatch" style={{'--swatch':PALETTE[option].top} as React.CSSProperties} autoFocus={option===color} onClick={()=>choose(option)}/>)}</div>
   :<><button onClick={()=>window.stickee.create()} title="New note (Ctrl+Alt+N)">New</button><button onClick={()=>window.stickee.hide()} title="Hide note; restore from the tray">Hide</button><button className="swatch current" ref={button=>{if(button&&restoreColorFocus.current){restoreColorFocus.current=false;button.focus({preventScroll:true})}}} aria-label={`Paper color: ${tone.label}. Change`} title="Paper color" onClick={()=>setPicking(true)}/></>}</div>

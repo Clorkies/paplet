@@ -49,7 +49,8 @@ it('never draws outside the window, and the drag envelope covers every extreme',
  expect(rects.length).toBeLessThanOrEqual(SIZE)
  for(const rect of rects){expect(rect.x).toBeGreaterThanOrEqual(0);expect(rect.x+rect.width).toBeLessThanOrEqual(SIZE)}
  for(const [x,y] of [[0,0],[359,0],[0,359],[359,359]])expect(rects.some(r=>x>=r.x&&x<r.x+r.width&&y>=r.y&&y<r.y+r.height)).toBe(false)
- const rows=new Map(rects.map(r=>[r.y,r]))
+ const rows=new Map<number,(typeof rects)[number]>()
+ for(const rect of rects)for(let y=rect.y;y<rect.y+rect.height;y++)rows.set(y,rect)
  for(const outline of envelopeOutlines())for(const p of outline){
   expect(p.x).toBeGreaterThan(2);expect(p.x).toBeLessThan(SIZE-2);expect(p.y).toBeGreaterThan(2);expect(p.y).toBeLessThan(SIZE-2)
   const row=rows.get(Math.min(SIZE-1,Math.floor(p.y)))!
