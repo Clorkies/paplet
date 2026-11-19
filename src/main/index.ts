@@ -1,3 +1,4 @@
+import { validInk } from '../shared/ink'
 import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, globalShortcut, dialog, systemPreferences } from 'electron'
 import { centeredNote, exitSample, presentNote } from './visibility'
 import { applyBatch, batchTargets, type BatchOperation } from './batch'
@@ -168,7 +169,7 @@ async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResu
  changed();return {ok:true,message:moved?(moveHere?'Moved here and highlighted.':'Display unavailable. Note moved here and highlighted.'):'Highlighted on its display.'}
 }
 function openManager(){void manager?.open().catch(error=>dialog.showErrorBox('Could not open Stickee',String(error)))}
-function snapshot():ManagerSnapshot{return {revision:0,sets:data.sets,notes:data.notes.map(({id,text,color,hidden,deletedAt})=>({id,text,color,hidden,...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
+function snapshot():ManagerSnapshot{return {revision:0,sets:data.sets,notes:data.notes.map(({id,text,color,hidden,deletedAt,ink})=>({id,text,color,hidden,...(ink?.length?{ink}:{}),...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
 async function managerAction(value:unknown):Promise<ManagerResult>{
  if(!value||typeof value!=='object'||!('type' in value)||typeof value.type!=='string')return {ok:false,error:'Invalid action'}
  const input=value as Record<string,unknown>
@@ -246,7 +247,7 @@ async function createWindow(record:SavedNote,focus=false,entrance=false,playShow
  const area=screen.getDisplayMatching({x:record.x,y:record.y,width:SIZE,height:SIZE}).workArea
  const p=clampPosition(record,area);record.x=p.x;record.y=p.y
   const win=new BrowserWindow({...p,width:SIZE,height:SIZE,frame:false,transparent:true,thickFrame:false,skipTaskbar:true,backgroundColor:'#00000000',hasShadow:false,resizable:false,maximizable:false,fullscreenable:false,show:false,alwaysOnTop:true,webPreferences:{preload:join(__dirname,'../preload/index.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,autoplayPolicy:'no-user-gesture-required'}})
-  const config:Config={curlSide:record.curlSide??(record.angle>0?'left':'right'),text:record.text,color:record.color,angle:record.angle,mode:'shape',nativeDrag:true,status:'',diagnostics,sound:data.settings.sound,soundStyle:settings().soundStyle}
+  const config:Config={curlSide:record.curlSide??(record.angle>0?'left':'right'),text:record.text,ink:record.ink,color:record.color,angle:record.angle,mode:'shape',nativeDrag:true,status:'',diagnostics,sound:data.settings.sound,soundStyle:settings().soundStyle}
   try{config.status=platform.apply(win,config.angle,config.mode,config.curlSide)}catch(error){config.status=`FAILED: ${String(error)}`}
   const id=win.webContents.id
   const item:Item={win,config,record,entering:false}
@@ -454,6 +455,13 @@ ipcMain.on('locate-ready',event=>{const item=notes.get(event.sender.id);if(!item
 ipcMain.on('retain-editor',event=>{
  const item=notes.get(event.sender.id)
  if(item&&event.senderFrame===event.sender.mainFrame)item.retainEditor=true
+})
+ipcMain.on('ink',(event,value:unknown)=>{
+ const item=notes.get(event.sender.id)
+ if(!item||item.record.deletedAt!==undefined||event.senderFrame!==event.sender.mainFrame||!validInk(value))return
+ item.config.ink=item.record.ink=value.map(({color,width,points})=>({color,width,points}))
+ item.retainEditor=true
+ save()
 })
 ipcMain.on('text',(event,value:unknown,immediate:unknown)=>{
  const item=notes.get(event.sender.id)

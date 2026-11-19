@@ -136,9 +136,9 @@ media, links, tables or a general document suite.
 - Keep the existing paper/content transform and animation intact. If editor
   integration requires altering that behavior, obtain specific direction first.
 
-## Later feature phase — drawing / scribbles (high user interest)
+## Freehand drawing
 
-Drawing is a desired feature, deliberately scheduled late rather than discarded.
+Drawing was implemented on `feat/scribble` on November 19, 2026. See [the deployment handoff](NEXT_SESSION.md) for packaged Windows QA. The original scope follows.
 It has higher priority than alternate paper sizes. Begin with a bounded pen tool,
 a few ink colours/widths, eraser, stroke undo/redo and clear drawing; no shape
 recognition, image import or painting suite is implied.
@@ -198,5 +198,5 @@ refactor the approved physics now.
 6. Optional square/wide/tall sizes last, preserving existing square behavior.
 
 Phases 3C and 3D are now implemented. The user requested stopping after sets.
-Formatting and drawing require a subsequent implementation session; paper sizes
+Drawing was subsequently implemented. Formatting remains deferred. Paper sizes
 are optional and last. Do not change the editor and paper geometry simultaneously.

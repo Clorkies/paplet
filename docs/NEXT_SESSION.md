@@ -1,5 +1,20 @@
 ﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
 
+# Deployment handoff, November 19, 2026
+
+PRs #1, #2 and #3 were integrated into `dev` at `f516b2d`. The three merged branches were pruned. Freehand drawing is on `feat/scribble`, branched from that consolidated commit. The unsigned ZIP recorded in the earlier handoff predates drawing. Build the Store candidate from a revision that includes the scribble change.
+
+Start with [the Windows Store launch plan](WINDOWS_STORE_LAUNCH_PLAN.md). Priorities are publisher enrollment and identity, portable backup/restore including schema 5 ink, and a disposable migration rehearsal before changing app identity. The user owns SFX selection and has closed the Alt+Tab disappearance after manual retesting.
+
+## Drawing verification
+
+- Each note has New, Hide, paper color and a pencil toggle. Draw with graphite, ocean or berry in 2, 4 or 6 logical pixels. Tap a line with the eraser to remove its stroke. Undo, redo and clear are local to the drawing. Escape returns to the pencil button and text editing is available again.
+- Local schema 5 reads schemas 1 through 4. Each note holds at most 128 strokes, 1,024 points per stroke and 16,384 points total. Ink shares the text layer's paper transform. Only a completed edit crosses IPC. Undo history holds up to 32 edits in the current note renderer.
+- The production build and typecheck passed, as did 66 automated tests. Packaged Windows QA used disposable data with 250 notes and 40 sets. It exercised mouse strokes, simulated pen taps, width/color, erasing, clear, toolbar and keyboard undo/redo, focus on Escape, text over ink, manager previews, hide/show, Trash restoration and restart. A partially drawn stroke stayed out of the main-process record. The resting ink SVG had zero mutations during a 1.5-second observation.
+- A native mouse drag moved the window and updated the paper bend with a blank note and with 128 strokes totaling 16,384 points. One three-second run per case on the test PC measured renderer frame intervals of 6.1 ms median and 6.2 ms p95 in both. These are animation callback intervals. Physical stylus and installed Store package testing remain outstanding.
+
+## Historical handoff
+
 # Fresh-session handoff — Phase 2 to Phase 3
 
 > **Current status (2026-11-19).** The user manually retested Alt+Tab and
