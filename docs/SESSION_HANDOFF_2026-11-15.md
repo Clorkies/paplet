@@ -1,4 +1,4 @@
-# Stickee handoff — critical native visibility regression
+# Paplet handoff — critical native visibility regression
 
 ## Immediate instruction and evidence
 
@@ -23,7 +23,7 @@ for show/hide/placement transitions does not authorize retuning those dynamics.
 
 ## Repository and Git workflow
 
-- Workspace: `F:\Projects\Stickee`.
+- Workspace: the local project checkout.
 - Active branch: `feat/note-manager`.
 - Current committed/pushed head: `903506660c2ede078b3b384e84e184f220670f9c`
   (`Fix settings overflow and note visibility transitions`).
@@ -36,9 +36,9 @@ for show/hide/placement transitions does not authorize retuning those dynamics.
   `improve/paper-motion` at `de3fef8`. All feature branches were pushed.
 - Feature PRs target **dev**, not main. Open PRs were checked read-only during this
   investigation. They were created as drafts; inspect current status before action:
-  [#1 paper](https://github.com/Clorkies/stickee/pull/1),
-  [#2 core](https://github.com/Clorkies/stickee/pull/2),
-  [#3 manager](https://github.com/Clorkies/stickee/pull/3).
+  [#1 paper](https://github.com/Clorkies/paplet/pull/1),
+  [#2 core](https://github.com/Clorkies/paplet/pull/2),
+  [#3 manager](https://github.com/Clorkies/paplet/pull/3).
 - The branches share ancestor commits. Intended integration order is #1 → #2 → #3;
   no merges are authorized by this handoff. PR #3's body predates this new report
   and does not yet describe the critical failure. It was not edited this turn.

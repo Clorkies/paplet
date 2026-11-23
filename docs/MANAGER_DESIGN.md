@@ -1,4 +1,4 @@
-# Stickee collection — Phase 3B
+# Paplet collection — Phase 3B
 
 Direction: a quiet paper collection with a reading margin. Warm neutral shelves,
 actual paper colours and text identify notes; a restrained green anchors actions.
@@ -51,7 +51,7 @@ guidance are visible in Preferences.
 
 The manager has a dedicated preload, sender/main-frame validation and serialized
 mutations. It receives coalesced change snapshots, not animation-frame polling.
-Closing it does not quit Stickee. Open from tray, tray double-click or a second
+Closing it does not quit Paplet. Open from tray, tray double-click or a second
 launch; repeated opening focuses the same window. A normal start opens it too.
 
 ## Acceptance status
@@ -104,7 +104,7 @@ set; Trash is global. Show set is additive. Set dialogs handle naming, membershi
 and deletion; deleting a set keeps notes. Select mode and individual note actions
 both support Add to set, and members can be removed from the selected set.
 
-The shortcut control is read-only. Record temporarily releases Stickee's global
+The shortcut control is read-only. Record temporarily releases Paplet's global
 shortcut, captures a supported combination, then restores the saved shortcut until
 Save preferences applies the change. Cancel/blur/close/renderer exit restore it.
 Sound styles are Rustle (existing engine unchanged) and Click & drop (new reusable

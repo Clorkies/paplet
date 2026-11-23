@@ -1,8 +1,9 @@
+import type { Stroke } from './ink'
 import type { PaperColor } from './palette'
 import type { SoundStyle } from './settings'
 import type { NoteSet } from './sets'
 
-export type CollectionNote={id:string;text:string;color:PaperColor;hidden:boolean;deletedAt?:number}
+export type CollectionNote={ink?:Stroke[];id:string;text:string;color:PaperColor;hidden:boolean;deletedAt?:number}
 export type ManagerSettings={sound:boolean;soundStyle:SoundStyle;defaultColor:PaperColor;shortcut:string}
 export type ManagerSnapshot={revision:number;notes:CollectionNote[];sets:NoteSet[];settings:ManagerSettings;storagePath:string;saveError:boolean}
 export type ManagerAction=

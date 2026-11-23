@@ -1,35 +1,37 @@
+import { validInk, type Stroke } from '../shared/ink'
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, copyFileSync, openSync, fsyncSync, closeSync } from 'node:fs'
 import { join } from 'node:path'
 import { isPaperColor, legacyColor, type PaperColor } from '../shared/palette'
 import { validShortcut, validSoundStyle, type SoundStyle } from '../shared/settings'
 import type { NoteSet } from '../shared/sets'
-export const SCHEMA_VERSION=4
-export type SavedNote={curlSide?:'left'|'right';id:string;text:string;color:PaperColor;angle:number;x:number;y:number;hidden:boolean;deletedAt?:number}
+export const SCHEMA_VERSION=5
+export type SavedNote={ink?:Stroke[];curlSide?:'left'|'right';id:string;text:string;color:PaperColor;angle:number;x:number;y:number;hidden:boolean;deletedAt?:number}
 export type Settings={sound:boolean;soundStyle?:SoundStyle;defaultColor?:PaperColor;shortcut?:string}
-export type SavedData={schemaVersion:4;notes:SavedNote[];sets:NoteSet[];settings:Settings}
-export const emptyData=():SavedData=>({schemaVersion:4,notes:[],sets:[],settings:{sound:true}})
+export type SavedData={schemaVersion:5;notes:SavedNote[];sets:NoteSet[];settings:Settings}
+export const emptyData=():SavedData=>({schemaVersion:5,notes:[],sets:[],settings:{sound:true}})
 /** Validates current data and migrates schemas 1 (numeric paper variant) and 2 (no trash). */
 export function parseData(raw:string):SavedData {
  const data=JSON.parse(raw)
- if(!data||![1,2,3,4].includes(data.schemaVersion)||!Array.isArray(data.notes))throw new Error('Unsupported or invalid notes file')
+ if(!data||![1,2,3,4,5].includes(data.schemaVersion)||!Array.isArray(data.notes))throw new Error('Unsupported or invalid notes file')
  const legacy=data.schemaVersion===1,ids=new Set<string>()
  const notes:SavedNote[]=data.notes.map((n:Record<string,unknown>)=>{
   const color=legacy?legacyColor(n?.note):n?.color
   if(!n||(n.curlSide!==undefined&&n.curlSide!=='left'&&n.curlSide!=='right')||typeof n.id!=='string'||ids.has(n.id)||typeof n.text!=='string'||n.text.length>1_000_000||!isPaperColor(color)||typeof n.angle!=='number'||!Number.isFinite(n.angle)||Math.abs(n.angle)>3||typeof n.x!=='number'||!Number.isFinite(n.x)||typeof n.y!=='number'||!Number.isFinite(n.y)||typeof n.hidden!=='boolean')throw new Error('Invalid note')
   if(data.schemaVersion>=3&&n.deletedAt!==undefined&&(typeof n.deletedAt!=='number'||!Number.isSafeInteger(n.deletedAt)||n.deletedAt<0))throw new Error('Invalid deletion timestamp')
   ids.add(n.id)
-  return {...(data.schemaVersion>=3&&n.deletedAt!==undefined?{deletedAt:n.deletedAt as number}:{}),...(n.curlSide?{curlSide:n.curlSide}:{}),id:n.id,text:n.text,color,angle:n.angle,x:n.x,y:n.y,hidden:n.hidden}
+  if(data.schemaVersion>=5 && n.ink!==undefined && !validInk(n.ink))throw new Error('Invalid drawing')
+  return {...(data.schemaVersion>=5 && n.ink!==undefined?{ink:n.ink as Stroke[]}:{}),...(data.schemaVersion>=3&&n.deletedAt!==undefined?{deletedAt:n.deletedAt as number}:{}),...(n.curlSide?{curlSide:n.curlSide}:{}),id:n.id,text:n.text,color,angle:n.angle,x:n.x,y:n.y,hidden:n.hidden}
  })
  if(!legacy&&(!data.settings||typeof data.settings.sound!=='boolean'))throw new Error('Invalid settings')
  if(!legacy&&((data.settings.defaultColor!==undefined&&!isPaperColor(data.settings.defaultColor))||(data.settings.shortcut!==undefined&&!validShortcut(data.settings.shortcut))))throw new Error('Invalid settings')
  if(!legacy&&data.settings.soundStyle!==undefined&&!validSoundStyle(data.settings.soundStyle))throw new Error('Invalid sound style')
  const setIds=new Set<string>()
- if(data.schemaVersion===4&&(!Array.isArray(data.sets)||data.sets.length>5000))throw new Error('Invalid note sets')
- const sets:NoteSet[]=data.schemaVersion===4?data.sets.map((set:NoteSet)=>{
+ if(data.schemaVersion>=4&&(!Array.isArray(data.sets)||data.sets.length>5000))throw new Error('Invalid note sets')
+ const sets:NoteSet[]=data.schemaVersion>=4?data.sets.map((set:NoteSet)=>{
   if(!set||typeof set.id!=='string'||!set.id||set.id.length>128||setIds.has(set.id)||typeof set.name!=='string'||!set.name.trim()||set.name.length>60||!Array.isArray(set.noteIds)||set.noteIds.length>1000||new Set(set.noteIds).size!==set.noteIds.length||set.noteIds.some(id=>typeof id!=='string'||!ids.has(id)))throw new Error('Invalid note set')
   setIds.add(set.id);return {id:set.id,name:set.name,noteIds:[...set.noteIds]}
  }):[]
- return {schemaVersion:4,notes,sets,settings:{sound:legacy?true:data.settings.sound,...(!legacy&&data.settings.soundStyle!==undefined?{soundStyle:data.settings.soundStyle}:{}),...(!legacy&&data.settings.defaultColor!==undefined?{defaultColor:data.settings.defaultColor}:{}),...(!legacy&&data.settings.shortcut!==undefined?{shortcut:data.settings.shortcut}:{})}}
+ return {schemaVersion:5,notes,sets,settings:{sound:legacy?true:data.settings.sound,...(!legacy&&data.settings.soundStyle!==undefined?{soundStyle:data.settings.soundStyle}:{}),...(!legacy&&data.settings.defaultColor!==undefined?{defaultColor:data.settings.defaultColor}:{}),...(!legacy&&data.settings.shortcut!==undefined?{shortcut:data.settings.shortcut}:{})}}
 }
 export class NoteStore {
  readonly path:string
@@ -42,7 +44,7 @@ export class NoteStore {
   }
   const raw=readFileSync(this.path,'utf8')
   // Never overwrite a future schema with an older app.
-  try{const version=JSON.parse(raw).schemaVersion;if(typeof version==='number'&&version>SCHEMA_VERSION)throw new Error('Notes were saved by a newer Stickee version')}catch(error){if(error instanceof Error&&error.message.includes('newer Stickee'))throw error}
+  try{const version=JSON.parse(raw).schemaVersion;if(typeof version==='number'&&version>SCHEMA_VERSION)throw new Error('Notes were saved by a newer Paplet version')}catch(error){if(error instanceof Error&&error.message.includes('newer Paplet'))throw error}
   try{return parseData(raw)}catch{
    const recovery=existsSync(this.path+'.bak')?parseData(readFileSync(this.path+'.bak','utf8')):emptyData()
    renameSync(this.path,this.path+`.corrupt-${Date.now()}`)
@@ -51,7 +53,7 @@ export class NoteStore {
   }
  }
  save(data:SavedData){
-  const raw=JSON.stringify(data,null,2);parseData(raw)
+  const raw=JSON.stringify(data);parseData(raw)
   const temp=this.path+'.tmp'
   writeFileSync(temp,raw,'utf8')
   const fd=openSync(temp,'r+');try{fsyncSync(fd)}finally{closeSync(fd)}

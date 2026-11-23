@@ -1,4 +1,4 @@
-# Stickee repository instructions
+# Paplet repository instructions
 
 - Read `docs/NEXT_SESSION.md` and the referenced current roadmap before editing.
 - The desktop paper animation is approved. Do not retune or refactor its bending,

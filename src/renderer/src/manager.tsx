@@ -1,3 +1,4 @@
+import { InkPreview } from './InkPreview'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { CollectionNote, ManagerAction, ManagerSettings, ManagerSnapshot } from '../../shared/manager'
@@ -223,8 +224,8 @@ function Collection(){
   const target=event.target as HTMLElement
   if(!preferences&&!allSets&&!setDialog&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='a'&&!target.closest('input,textarea,[contenteditable=true]')){event.preventDefault();selectAll()}
  }}>
-  <aside className="sidebar" aria-label="Stickee">
-   <div className="brand"><span className="brand-paper" aria-hidden="true"/>Stickee</div>
+  <aside className="sidebar" aria-label="Paplet">
+   <div className="brand"><span className="brand-paper" aria-hidden="true"/>Paplet</div>
    <nav className="side-group" aria-label="Library">
     {library.map(([id,label,icon,count])=>{const current=!preferences&&!allSets&&!activeSet&&filter===id;return <button aria-label={label} title={label} key={id} className={`side-item ${current?'current':''}`} aria-current={current?'page':undefined} onClick={()=>goLibrary(id)}><Icon name={icon}/><span className="side-label">{label}</span><span className="side-count">{count||''}</span></button>})}
    </nav>
@@ -244,7 +245,7 @@ function Collection(){
      {filter!=='trash'&&<button className="primary" disabled={busy} onClick={()=>void createNote()}><Icon name="plus"/>New note</button>}
     </div>}
    </header>
-   {(error||state.saveError)&&<div className="error-banner" role="alert"><span>{error||'Your latest changes could not be saved. Keep Stickee open and check disk access.'}</span>{error&&<button className="tool-button" aria-label="Dismiss message" onClick={()=>setError('')}><Icon name="close"/></button>}</div>}
+   {(error||state.saveError)&&<div className="error-banner" role="alert"><span>{error||'Your latest changes could not be saved. Keep Paplet open and check disk access.'}</span>{error&&<button className="tool-button" aria-label="Dismiss message" onClick={()=>setError('')}><Icon name="close"/></button>}</div>}
    {preferences?<Settings storagePath={state.storagePath} settings={state.settings} busy={busy} onBack={()=>setPreferences(false)} onSave={value=>run({type:'settings',...value})}/>:<div className={`content-body ${allSets?'sets-only':''}`}>
     <section className="scroller" aria-label={heading} onScroll={event=>{const top=event.currentTarget.scrollTop>40;if(top!==scrolled)setScrolled(top);if(top&&!query&&document.activeElement!==search.current)setSearchOpen(false)}}>
      <div className="page-heading">
@@ -271,8 +272,8 @@ function Collection(){
       {visible.map(note=>filter==='trash'?<button key={note.id} data-note={note.id} className={`trash-row ${detail?.id===note.id?'selected':''} ${checked.has(note.id)?'is-checked':''}`} role={selecting?'checkbox':undefined} aria-checked={selecting?checked.has(note.id):undefined} aria-pressed={!selecting?detail?.id===note.id:undefined} aria-label={`${title(note).slice(0,100)}, removed ${removedDate(note)}`} onClick={event=>toggleNote(note,event)}>
        {selecting?selectionMark(note):<span className="trash-paper-token" style={paperStyle(note)}/>}
        <span className="trash-excerpt"><strong>{title(note)}</strong><span>{note.text.trim().split('\n').slice(1).join(' ').slice(0,100)||'No additional text'}</span></span><time dateTime={removedISO(note)}>{removedDate(note)}</time>
-      </button>:<button key={note.id} data-note={note.id} draggable={!activeSet&&filter==='all'&&!busy} onDragStart={event=>{draggedNote.current=note.id;event.dataTransfer.effectAllowed='copy';event.dataTransfer.setData('application/x-stickee-note',note.id)}} onDragEnd={()=>{draggedNote.current=undefined;setDropTarget(undefined)}} className={`note-preview ${detail?.id===note.id?'selected':''} ${checked.has(note.id)?'is-checked':''}`} role={selecting?'checkbox':undefined} aria-checked={selecting?checked.has(note.id):undefined} aria-pressed={!selecting?detail?.id===note.id:undefined} aria-label={`${title(note).slice(0,100)}, ${note.hidden?'hidden':'on screen'}`} onClick={event=>toggleNote(note,event)} onDoubleClick={()=>{if(!selecting)void run({type:'show',id:note.id})}} style={paperStyle(note)}>
-       {selecting&&selectionMark(note)}<span className="preview-paper"><span className={`preview-text ${!note.text.trim()?'blank':''}`}>{note.text.trim().slice(0,220)||'Empty note'}</span><span className="preview-curl" aria-hidden="true"/></span><span className="preview-meta"><span className={`visibility-dot ${note.hidden?'hidden':''}`} aria-hidden="true"/>{note.hidden?'Hidden':'On screen'}</span>
+      </button>:<button key={note.id} data-note={note.id} draggable={!activeSet&&filter==='all'&&!busy} onDragStart={event=>{draggedNote.current=note.id;event.dataTransfer.effectAllowed='copy';event.dataTransfer.setData('application/x-paplet-note',note.id)}} onDragEnd={()=>{draggedNote.current=undefined;setDropTarget(undefined)}} className={`note-preview ${detail?.id===note.id?'selected':''} ${checked.has(note.id)?'is-checked':''}`} role={selecting?'checkbox':undefined} aria-checked={selecting?checked.has(note.id):undefined} aria-pressed={!selecting?detail?.id===note.id:undefined} aria-label={`${title(note).slice(0,100)}, ${note.hidden?'hidden':'on screen'}`} onClick={event=>toggleNote(note,event)} onDoubleClick={()=>{if(!selecting)void run({type:'show',id:note.id})}} style={paperStyle(note)}>
+       {selecting&&selectionMark(note)}<span className="preview-paper"><span className={`preview-text ${!note.text.trim()?'blank':''}`}>{note.text.trim().slice(0,220)||(note.ink?.length?'':'Empty note')}</span><InkPreview ink={note.ink}/><span className="preview-curl" aria-hidden="true"/></span><span className="preview-meta"><span className={`visibility-dot ${note.hidden?'hidden':''}`} aria-hidden="true"/>{note.hidden?'Hidden':'On screen'}</span>
       </button>)}
      </div>:<div className="empty-state"><Icon name={filter==='trash'?'trash':query?'search':'paper'}/><h2>{query?'No results':filter==='trash'?'Trash is empty':filter==='hidden'?'No hidden notes':filter==='visible'?'No notes on screen':'No notes yet'}</h2>{query?<button onClick={()=>setQuery('')}>Clear search</button>:filter!=='trash'&&<button className="primary" disabled={busy} onClick={()=>void createNote()}><Icon name="plus"/>New note</button>}</div>}
     </>}
@@ -280,12 +281,12 @@ function Collection(){
     {!allSets&&<aside className="inspector" aria-label="Selected note">
      {detail?<>
       <div className="detail-heading"><span>{filter==='trash'?`Removed ${removedDate(detail)}`:detail.hidden?'Hidden':'On your desktop'}</span><span className="paper-name"><i style={{background:PALETTE[detail.color].top}}/>{PALETTE[detail.color].label}</span></div>
-      <div className="reading-paper" style={paperStyle(detail)}><div key={detail.id} tabIndex={0} aria-label="Full note text" className={`full-note ${!detail.text.trim()?'blank':''}`}>{detail.text||'Empty note'}</div><div className="reading-curl" aria-hidden="true"/></div>
+      <div className="reading-paper" style={paperStyle(detail)}><div key={detail.id} tabIndex={0} aria-label="Full note text" className={`full-note ${!detail.text.trim()?'blank':''}`}>{detail.text||(detail.ink?.length?'':'Empty note')}</div><InkPreview ink={detail.ink}/><div className="reading-curl" aria-hidden="true"/></div>
       <div className="detail-actions">{filter==='trash'?<><button className="primary wide" disabled={busy} onClick={()=>void batch('restore',[detail.id])}><Icon name="undo"/>Restore note</button><button className="link danger" disabled={busy} onClick={()=>void batch('delete-forever',[detail.id])}>Delete permanently...</button></>:<>
        <button className="primary wide" disabled={busy} onClick={()=>void run({type:'show',id:detail.id})}>{detail.hidden?'Show and edit':'Edit on desktop'}<Icon name="arrow"/></button>
        <div className="action-list">
         <button disabled={busy} onClick={()=>{setUndoIds([]);void run({type:'locate',id:detail.id})}} title="Show and highlight on its existing display. Keeps this window focused."><Icon name="locate"/>Find on desktop</button>
-        <button disabled={busy} onClick={()=>{setUndoIds([]);void run({type:'recover',id:detail.id})}} title="Move to the display containing Stickee, then highlight."><Icon name="move"/>Move to this screen</button>
+        <button disabled={busy} onClick={()=>{setUndoIds([]);void run({type:'recover',id:detail.id})}} title="Move to the display containing Paplet, then highlight."><Icon name="move"/>Move to this screen</button>
         <button disabled={busy||detail.hidden} onClick={()=>void run({type:'hide',id:detail.id})}><Icon name="eyeOff"/>Hide</button>
         <button onClick={()=>{setChecked(new Set([detail.id]));setError('');setSetDialog(state.sets.length?'add':'create')}}><Icon name="folder"/>Add to set</button>
         {activeSet&&<button disabled={busy} onClick={()=>void run({type:'set-remove',id:activeSet.id,ids:[detail.id]})}><Icon name="close"/>Remove from set</button>}

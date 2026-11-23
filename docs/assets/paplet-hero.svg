@@ -11,7 +11,7 @@
   <rect x="580" width="620" height="520" fill="url(#dots)"/>
   <g font-family="Segoe UI, Arial, sans-serif" fill="#383B30">
     <text x="76" y="111" font-size="13" letter-spacing="5" fill="#70755F">A LITTLE PAPER. A LITTLE PRESENCE.</text>
-    <text x="70" y="230" font-size="94" font-weight="600" letter-spacing="-5">Stickee</text>
+    <text x="70" y="230" font-size="94" font-weight="600" letter-spacing="-5">Paplet</text>
     <text x="76" y="291" font-size="26" letter-spacing="-.5">Keep a thought in sight.</text>
     <path d="M76 335H124" stroke="#A5AA92" stroke-width="2"/>
     <text x="76" y="381" font-size="16" fill="#747865">Physical paper, reimagined for your desktop.</text>

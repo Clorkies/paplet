@@ -1,12 +1,12 @@
 ﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
 
-# Stickee progress tracker
+# Paplet progress tracker
 
 Last updated: 2026-11-15. Phase 3D sets and revised manager/preferences are implemented on `feat/note-manager`. User requested stopping here, committing and pushing. Feature PRs target dev.
 
 **Current position:** Additive named sets, direct manager labels, shortcut recording and selectable Rustle / Click & drop audio are implemented. Formatting and drawing remain future work; optional paper sizes are last. Native acceptance is pending.
 
-The [implementation plan](../STICKEE_IMPLEMENTATION_PLAN.md) defines scope. This tracker records completion and remaining work. Update it alongside implementation changes and keep automated checks separate from manual Windows results.
+The [implementation plan](../PAPLET_IMPLEMENTATION_PLAN.md) defines scope. This tracker records completion and remaining work. Update it alongside implementation changes and keep automated checks separate from manual Windows results.
 
 ## Phase overview
 
@@ -146,7 +146,7 @@ Implemented:
 - **Palette.** Yellow, peach, mint, lavender and blue, each with its own paper, rolled underside and ink (`src/shared/palette.ts`); ink contrast is above 7:1 on every paper. Colours cross-fade over 260 ms. A small dot beside New/Hide opens five swatches in place (radio group, Escape closes, closes on drag or blur). The context menu has the same choice. A note created from another note starts on the same paper; the shortcut and tray create yellow.
 - **Save format v2.** Notes store a semantic `color`; data gains `settings.sound`. Schema 1 files migrate on load (variant 0 to yellow, 1 to peach) and the old file is kept as the backup on first save. Unknown colours, missing settings and schema 3+ are rejected without overwriting.
 - **Sound preference.** Now one persistent, global setting, toggled from the note context menu or the tray, applied to every note immediately. The per-note session toggle is gone from the note face.
-- **Ordinary note face.** Only New, Hide and the colour dot. Hit-testing experiments appear only when launched with `STICKEE_DIAGNOSTICS=1` or `--diagnostics`, and the experiment IPC is refused otherwise. The drag tooltip is removed. All incidental tints derive from the ink colour.
+- **Ordinary note face.** Only New, Hide and the colour dot. Hit-testing experiments appear only when launched with `PAPLET_DIAGNOSTICS=1` or `--diagnostics`, and the experiment IPC is refused otherwise. The drag tooltip is removed. All incidental tints derive from the ink colour.
 
 Evidence:
 
@@ -298,7 +298,7 @@ Implemented the user's requested order and stop point:
 - Removed decorative manager headings, empty-state descriptions and repeated
   locate/retention prose. Collection headings, counts and actions are direct.
 - Read-only shortcut recorder with Record/Cancel, Escape, canonical key capture
-  and explicit Save. Stickee's current global shortcut is released during capture
+  and explicit Save. Paplet's current global shortcut is released during capture
   and restored afterwards, including manager blur/close/renderer termination.
 - Existing Rustle plus a separate Click & drop style. Two short generated buffers
   provide a grab click and damped release cue; cached per used context, non-looping,

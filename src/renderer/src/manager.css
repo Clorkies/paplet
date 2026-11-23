@@ -1,4 +1,4 @@
-/* Stickee main window. Desktop paper notes never load this file.
+/* Paplet main window. Desktop paper notes never load this file.
    Structure: one inset glass sidebar, a flat content area on the window material,
    folders drawn as real folders, and a single floating capsule for transient actions.
    Containers are used only where something is genuinely a separate layer. */
@@ -307,3 +307,5 @@ legend{padding:0}
   }
  }
 }
+
+.ink-preview{position:absolute;left:8.57%;top:18.57%;width:82.86%;height:auto;pointer-events:none}

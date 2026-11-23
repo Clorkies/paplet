@@ -74,3 +74,16 @@ button:focus-visible,.lab:focus-visible{outline:2px solid currentColor;outline-o
 @media(prefers-reduced-motion:no-preference){
  .paper:hover .content,.paper:focus-within .content,.paper[data-dragging] .content{will-change:transform}
 }
+
+.ink-surface{position:absolute;inset:0;width:232px;height:170px;pointer-events:none;overflow:hidden}
+.ink-surface[data-active]{pointer-events:auto;touch-action:none;cursor:crosshair}
+.ink-surface[data-erase] path[data-stroke]{cursor:pointer;pointer-events:stroke}
+.editor-wrap:has(.ink-surface) textarea::placeholder{opacity:0}
+.ink-tools{position:absolute;top:169px;left:0;display:flex;align-items:center;gap:1px;padding:2px 4px;border:1px solid color-mix(in srgb,currentColor 17%,transparent);border-radius:14px;background:color-mix(in srgb,var(--paper-a) 80%,white);box-shadow:0 1px 3px #30251017}
+.ink-tools button,.note-actions .pencil{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;color:inherit;background:transparent}
+.ink-tools i{display:block;width:10px;height:10px;border-radius:50%}
+.ink-tools button[aria-pressed="true"],.pencil[aria-pressed="true"],.ink-tools button:hover:enabled{background:color-mix(in srgb,currentColor 15%,transparent)}
+.ink-tools button:disabled{opacity:.29;cursor:default}
+.paper:has(.ink-tools) .note-actions{opacity:1}
+.paper[data-dragging] .ink-tools{visibility:hidden}
+.ink-message{position:absolute;bottom:2px;left:0;background:var(--paper-a);padding:3px;font-size:11px}
