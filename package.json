@@ -1,6 +1,6 @@
 {
     "name": "paplet",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "Local-first desktop notes with the feel of paper",
     "main": "./out/main/index.js",
     "scripts": {
@@ -9,7 +9,8 @@
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "build": "npm run typecheck && electron-vite build",
-        "pack:win": "npm run build && electron-builder --win --dir"
+        "pack:win": "npm run build && electron-builder --win --dir",
+        "pack:store": "npm run build && electron-builder --win appx --x64 --publish never --config.directories.output=dist/store"
     },
     "keywords": [],
     "author": "",
@@ -44,7 +45,11 @@
             }
         ],
         "appx": {
-            "displayName": "Paplet"
+            "displayName": "Paplet",
+            "identityName": "ClarkModequillo.Paplet",
+            "publisher": "CN=09977DFD-6865-4396-A491-9B1A1F7A7173",
+            "publisherDisplayName": "Clark Modequillo",
+            "backgroundColor": "transparent"
         }
     },
     "devDependencies": {
