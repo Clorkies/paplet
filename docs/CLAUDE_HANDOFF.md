@@ -1,12 +1,12 @@
 ﻿> **LATEST USER DIRECTION — APPROVED PAPER ANIMATION:** The user considers the current paper animation **ABSOLUTELY AMAZING**. Do not modify, retune, replace, or refactor its animation behavior unless the user explicitly requests specific modifications. Preserve the dynamics, bending, pinch response, swing, curl transitions, settling, and visual motion tuning. Earlier requests to improve paper flow are superseded. Pending verification does not authorize animation changes. If another feature requires changing the animation, report the issue and obtain the user's specific direction first. This applies throughout all remaining phases.
 
-# Stickee — development handoff and remaining roadmap
+# Paplet — development handoff and remaining roadmap
 
 Prepared 2026-11-14. This document is a detailed backlog and creative brief for the next engineer, including Claude. It records current evidence and recommended work; it does not declare all proposed features part of the immediate implementation scope.
 
 ## 1. Where we left off
 
-Stickee is a real Windows-first Electron + React + TypeScript application. Each visible sticky note is its own transparent, frameless native window. The product recreates placing and moving paper on a computer screen while ordinary desktop applications remain usable underneath.
+Paplet is a real Windows-first Electron + React + TypeScript application. Each visible sticky note is its own transparent, frameless native window. The product recreates placing and moving paper on a computer screen while ordinary desktop applications remain usable underneath.
 
 Current branch: `improve/paper-motion`, pushed to `origin/improve/paper-motion`.
 
@@ -39,7 +39,7 @@ Phase 0 has a conditional baseline. Phase 1 is implemented but still needs nativ
 
 ## 2. Sources of truth and precedence
 
-Read the entire `STICKEE_IMPLEMENTATION_PLAN.md`, then `docs/PROGRESS.md`, `docs/FEASIBILITY.md`, `docs/PHASE_1.md`, and this handoff before editing. Inspect actual code rather than assuming the proposed architecture already exists.
+Read the entire `PAPLET_IMPLEMENTATION_PLAN.md`, then `docs/PROGRESS.md`, `docs/FEASIBILITY.md`, `docs/PHASE_1.md`, and this handoff before editing. Inspect actual code rather than assuming the proposed architecture already exists.
 
 Latest user preferences refine older specification language:
 
@@ -248,7 +248,7 @@ Every note is discoverable even when hidden/off-screen. Show/focus targets the c
 - Smoke-test the packaged executable/installer on Windows independently from development mode. Check tray, shortcut, audio, persistence, restart, uninstall and upgrade behavior.
 - Document unsigned-binary/SmartScreen behavior honestly; assess signing before broad distribution without promising it is implemented.
 - Write user-facing help, hotkeys, recovery guidance, release notes and known limitations. Keep local setup commands in development documentation rather than the product README.
-- Review Stickee name availability before public branding decisions. Name clearance has not been established.
+- Review Paplet name availability before public branding decisions. Name clearance has not been established.
 - Publishing releases, signing, deployment or merging to main requires the applicable user authorization; do not infer it from this backlog.
 
 ## 11. Later exploration and explicit exclusions
@@ -284,7 +284,7 @@ If time is limited, finish a coherent improvement and document remaining work. D
 ## 14. Brief prompt to give Claude
 
 ```text
-Continue development of Stickee in this repository. First read AGENTS.md, the entire STICKEE_IMPLEMENTATION_PLAN.md, docs/PROGRESS.md, docs/FEASIBILITY.md, docs/PHASE_1.md, and docs/CLAUDE_HANDOFF.md. Inspect the current branch and working tree before editing. The latest pushed baseline is improve/paper-motion at 260856c; do not assume main contains it.
+Continue development of Paplet in this repository. First read AGENTS.md, the entire PAPLET_IMPLEMENTATION_PLAN.md, docs/PROGRESS.md, docs/FEASIBILITY.md, docs/PHASE_1.md, and docs/CLAUDE_HANDOFF.md. Inspect the current branch and working tree before editing. The latest pushed baseline is improve/paper-motion at 260856c; do not assume main contains it.
 
 Our creative standard is “this looks like an Apple application”: exceptionally clean typography, spacing, materials, restrained controls and continuous, interruptible physical motion, while remaining a real Windows Electron app. First focus on making the existing paper significantly more flowy and convincingly bent around the grab point, with speed/acceleration-aware swing, asymmetric corner pinching, natural reversals and a subtle single curl. Preserve responsive native window movement, explicit editor activation, corner grab areas, click-through, persistence and controllable swoosh audio. Diagnose and fix any reproduced core regression before extending features.
 

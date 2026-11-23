@@ -31,7 +31,7 @@ export function InkEditor({initial, active, exit}: Props) {
  }
  function persist(next: Stroke[]) {
   setInk(next)
-  window.stickee.ink(next)
+  window.paplet.ink(next)
   setMessage('')
  }
  function change(next: Stroke[]) {

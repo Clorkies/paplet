@@ -12,7 +12,8 @@ import { randomUUID } from 'node:crypto'
 import { NoteStore, emptyData, type SavedNote, type SavedData } from './store'
 import { COLORS, DEFAULT_COLOR, PALETTE, isPaperColor, type PaperColor } from '../shared/palette'
 import { springStep } from '../shared/motion'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
+import { migrateLegacyProfile } from './profile-migration'
 import { writeFileSync } from 'node:fs'
 import { clampPosition, contains, polygon, region, movementRegion, SIZE } from '../shared/geometry'
 import { platform } from './platform'
@@ -21,7 +22,7 @@ type Item={win:BrowserWindow;config:Config;record:SavedNote;retainEditor?:boolea
 const notes=new Map<number,Item>() // keyed by IPC sender
 const windowsByNote=new Map<string,Item>() // keyed by persisted note ID
 // Hit-testing experiments are developer tools, not part of an ordinary note.
-const diagnostics=process.env.STICKEE_DIAGNOSTICS==='1'||process.argv.includes('--diagnostics')
+const diagnostics=process.env.PAPLET_DIAGNOSTICS==='1'||process.argv.includes('--diagnostics')
 // Opt-in, bounded event history. Saved locally on exit or from the tray.
 const traceEvents:string[]|undefined=process.argv.includes('--trace-visibility')?[]:undefined
 function appendTrace(window:number,event:string,state:object){
@@ -54,7 +55,7 @@ let store:NoteStore,data:SavedData=emptyData(),tray:Tray,quitting=false,saveTime
 function flush(){
  clearTimeout(saveTimer);saveTimer=undefined
  if(!persistenceReady)return true
- try{store.save(data);saveWarning=false;changed();return true}catch(error){console.error(error);if(!saveWarning){saveWarning=true;dialog.showErrorBox('Stickee could not save notes',String(error)+'\nKeep Stickee open and check disk access.')}changed();return false}
+ try{store.save(data);saveWarning=false;changed();return true}catch(error){console.error(error);if(!saveWarning){saveWarning=true;dialog.showErrorBox('Paplet could not save notes',String(error)+'\nKeep Paplet open and check disk access.')}changed();return false}
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250)}
 function save(){scheduleSave();changed()}
@@ -83,7 +84,7 @@ function visibilityCue(win:BrowserWindow,kind:'show'|'hide'){
 function setColor(item:Item,color:PaperColor){item.record.color=color;item.config.color=color;pushState(item);save()}
 function setSound(enabled:boolean){data.settings.sound=enabled;for(const item of notes.values())pushState(item);buildTray();save()}
 function buildTray(){
- tray?.setContextMenu(Menu.buildFromTemplate([{label:'Open Stickee',click:()=>openManager()},{type:'separator'},{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Undo delete',enabled:trashed(data).length>0,click:()=>{const note=trashed(data)[0];if(note)void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}},{label:'Trash',submenu:trashed(data).length?trashed(data).map(note=>({label:(note.text.trim().split('\n')[0]||'Untitled note').slice(0,60).replace(/&/g,'&&'),click:()=>{void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}})):[{label:'Trash is empty',enabled:false}]},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},...(traceEvents?[{label:'Save visibility trace',click:saveVisibilityTrace}]:[]),{label:'Quit',click:()=>app.quit()}]))
+ tray?.setContextMenu(Menu.buildFromTemplate([{label:'Open Paplet',click:()=>openManager()},{type:'separator'},{label:'Create Note',click:()=>newNote()},{label:'Show All',click:showAll},{label:'Hide All',click:hideAll},{type:'separator'},{label:'Undo delete',enabled:trashed(data).length>0,click:()=>{const note=trashed(data)[0];if(note)void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}},{label:'Trash',submenu:trashed(data).length?trashed(data).map(note=>({label:(note.text.trim().split('\n')[0]||'Untitled note').slice(0,60).replace(/&/g,'&&'),click:()=>{void restoreNote(note).catch(error=>dialog.showErrorBox('Could not restore note',String(error)))}})):[{label:'Trash is empty',enabled:false}]},{type:'separator'},{label:'Drag sound',type:'checkbox',checked:data.settings.sound,click:item=>setSound(item.checked)},{type:'separator'},...(traceEvents?[{label:'Save visibility trace',click:saveVisibilityTrace}]:[]),{label:'Quit',click:()=>app.quit()}]))
 }
 async function presentRecord(record:SavedNote,focus:boolean){
  const item=windowsByNote.get(record.id)
@@ -168,7 +169,7 @@ async function locateNote(record:SavedNote,moveHere:boolean):Promise<ManagerResu
  if(item.locateReady)item.win.webContents.send('locate');else item.pendingLocate=true
  changed();return {ok:true,message:moved?(moveHere?'Moved here and highlighted.':'Display unavailable. Note moved here and highlighted.'):'Highlighted on its display.'}
 }
-function openManager(){void manager?.open().catch(error=>dialog.showErrorBox('Could not open Stickee',String(error)))}
+function openManager(){void manager?.open().catch(error=>dialog.showErrorBox('Could not open Paplet',String(error)))}
 function snapshot():ManagerSnapshot{return {revision:0,sets:data.sets,notes:data.notes.map(({id,text,color,hidden,deletedAt,ink})=>({id,text,color,hidden,...(ink?.length?{ink}:{}),...(deletedAt!==undefined?{deletedAt}:{})})),settings:settings(),storagePath:store.path,saveError:saveWarning}}
 async function managerAction(value:unknown):Promise<ManagerResult>{
  if(!value||typeof value!=='object'||!('type' in value)||typeof value.type!=='string')return {ok:false,error:'Invalid action'}
@@ -228,7 +229,7 @@ function resumeShortcut(){
  shortcutActive=globalShortcut.register(settings().shortcut,()=>newNote())
  if(!shortcutActive)void dialog.showMessageBox({type:'warning',message:'The create shortcut is unavailable.',detail:'Choose a new shortcut in Preferences. Tray creation still works.'})
 }
-function updateTrayTip(){tray.setToolTip(`Stickee - ${settings().shortcut.replace('Control','Ctrl')} to create a note`)}
+function updateTrayTip(){tray.setToolTip(`Paplet - ${settings().shortcut.replace('Control','Ctrl')} to create a note`)}
 let drag:{id:number;dx:number;dy:number}|undefined
 let timer:ReturnType<typeof setInterval>
 function secure(win:BrowserWindow,lockZoom=true){
@@ -411,18 +412,18 @@ async function createWindow(record:SavedNote,focus=false,entrance=false,playShow
   try{await load(win,{});await ready;if(!record.hidden)await item.appear(focus,entrance);loaded=true}catch(error){if(!win.isDestroyed())win.destroy();throw error}
 }
 async function start(){
- store=new NoteStore(join(app.getPath('userData'),'data'));data=store.load();persistenceReady=true
- if(store.recovered)void dialog.showMessageBox({type:'warning',message:'Stickee recovered your notes.',detail:'The primary notes file was unavailable or malformed. A valid backup was used when available. Malformed files are preserved beside notes.json for recovery.'})
- // A tiny local RGBA paper glyph, independent of network or asset paths.
- const pixels=Buffer.alloc(16*16*4)
- for(let y=2;y<14;y++)for(let x=2;x<14;x++){const i=(y*16+x)*4;pixels[i]=110;pixels[i+1]=218;pixels[i+2]=248;pixels[i+3]=255}
- tray=new Tray(nativeImage.createFromBitmap(pixels,{width:16,height:16,scaleFactor:1}))
+ const profile=app.getPath('userData'),appData=app.getPath('appData')
+ store=new NoteStore(join(profile,'data'))
+ if(!app.commandLine.hasSwitch('user-data-dir')&&relative(appData,profile).toLowerCase()==='paplet')migrateLegacyProfile(appData,store.path)
+ data=store.load();persistenceReady=true
+ if(store.recovered)void dialog.showMessageBox({type:'warning',message:'Paplet recovered your notes.',detail:'The primary notes file was unavailable or malformed. A valid backup was used when available. Malformed files are preserved beside notes.json for recovery.'})
+ tray=new Tray(nativeImage.createFromPath(join(app.getAppPath(),'build','icon.png')).resize({width:16,height:16}))
  updateTrayTip()
  manager=createManager(snapshot,managerAction,win=>secure(win,false),resumeShortcut)
  buildTray()
  tray.on('double-click',()=>openManager())
  shortcutActive=globalShortcut.register(settings().shortcut,()=>newNote())
- if(!shortcutActive)void dialog.showMessageBox({type:'warning',message:`${settings().shortcut} is already in use.`,detail:'Create notes from the Stickee tray menu instead.'})
+ if(!shortcutActive)void dialog.showMessageBox({type:'warning',message:`${settings().shortcut} is already in use.`,detail:'Create notes from the Paplet tray menu instead.'})
  movementRegion() // build the cached drag envelope before the first drag needs it
  for(const record of data.notes)if(record.deletedAt===undefined&&!record.hidden&&!windowsByNote.has(record.id))await createWindow(record)
  if(data.notes.length===0)newNote()
@@ -476,9 +477,11 @@ ipcMain.on('create',event=>{const item=notes.get(event.sender.id);if(item&&event
 ipcMain.on('color',(event,value:unknown)=>{const item=notes.get(event.sender.id);if(item&&event.senderFrame===event.sender.mainFrame&&isPaperColor(value))setColor(item,value)})
 ipcMain.on('hide',event=>{const item=notes.get(event.sender.id);if(item&&event.senderFrame===event.sender.mainFrame){capture();const hidden=item.record.hidden;item.record.hidden=true;if(flush())item.dismiss?.();else item.record.hidden=hidden}})
 ipcMain.on('quit',event=>{if(notes.has(event.sender.id))app.quit()})
+app.setName('Paplet')
+if(process.platform==='win32'&&!process.windowsStore)app.setAppUserModelId('local.paplet.desktop')
 if(!app.requestSingleInstanceLock())app.quit()
 else {
- app.whenReady().then(start).catch(error=>{dialog.showErrorBox('Stickee startup failed',String(error));app.quit()})
+ app.whenReady().then(start).catch(error=>{dialog.showErrorBox('Paplet startup failed',String(error));app.quit()})
  app.on('second-instance',()=>openManager())
 }
 app.on('window-all-closed',()=>{})

@@ -1,14 +1,14 @@
-# Stickee â€” Desktop Sticky Notes That Feel Physical
+# Paplet â€” Desktop Sticky Notes That Feel Physical
 
 > **Status:** Implementation specification / Codex handoff  
-> **Working product name:** Stickee (provisional; existing apps use this name)  
+> **Product name:** Paplet<br />
 > **Target:** Windows 11 first; macOS later  
 > **Approach:** Feasibility spike first, then a small local-first desktop MVP  
 > **Last reviewed:** 2026-11-12
 
 ## 1. Product thesis
 
-Stickee is not a conventional note manager, dashboard, or web app. It puts *believable pieces of paper on the user's screen*. A note should appear, move, flex, settle, and disappear like a lightweight physical object. The app must coexist with normal desktop work: it should not consume an invisible fullscreen interaction layer or obstruct applications outside each note's actual area.
+Paplet is not a conventional note manager, dashboard, or web app. It puts *believable pieces of paper on the user's screen*. A note should appear, move, flex, settle, and disappear like a lightweight physical object. The app must coexist with normal desktop work: it should not consume an invisible fullscreen interaction layer or obstruct applications outside each note's actual area.
 
 ### Experience principles
 
@@ -166,7 +166,7 @@ Physics must be deterministic/reproducible enough to test; tune based on real us
 ## 6. Proposed architecture
 
 ```text
-stickee/
+paplet/
 â”œâ”€â”€ README.md
 â”œâ”€â”€ AGENTS.md                         # Codex project guardrails and local conventions
 â”œâ”€â”€ package.json
@@ -366,7 +366,7 @@ Any test not physically run must be marked **NOT RUN**, not PASS.
 
 ## 9. Definition of done: MVP
 
-The first MVP is acceptable when a user can launch Stickee, create a note from the tray or global shortcut, watch it enter naturally from the bottom, write multiline text, drag the independent paper-like note over ordinary applications, click through surrounding transparent areas, create multiple independent notes, and reopen the app with their notes intactâ€”all without interacting with a traditional main dashboard.
+The first MVP is acceptable when a user can launch Paplet, create a note from the tray or global shortcut, watch it enter naturally from the bottom, write multiline text, drag the independent paper-like note over ordinary applications, click through surrounding transparent areas, create multiple independent notes, and reopen the app with their notes intactâ€”all without interacting with a traditional main dashboard.
 
 Visual polish cannot excuse broken click-through, input focus, persistence, keyboard editing, or window placement.
 
@@ -381,7 +381,7 @@ Visual polish cannot excuse broken click-through, input focus, persistence, keyb
 | Multiple windows consume too much RAM | Bad background utility | Lightweight renderers, shared asset strategy, profile 10-note case |
 | Monitor changes strand notes offscreen | Lost usability | Clamp against current work areas on startup and display changes |
 | macOS shape support differs | Cross-platform blocker | Windows-first adapter and separate future macOS spike |
-| App name collision | Distribution/branding confusion | Keep Stickee provisional until proper name/trademark/domain checks |
+| App name collision | Distribution/branding confusion | Keep Paplet provisional until proper name/trademark/domain checks |
 
 ## 11. Codex execution protocol
 
@@ -425,7 +425,7 @@ Visual polish cannot excuse broken click-through, input focus, persistence, keyb
 
 ## Later product direction ? user clarification
 
-A future main Stickee window may manage both visible and hidden notes and provide general settings. Potential user-profile support is a future exploration, not authorization for accounts, authentication, sync, or cloud services in the current MVP. Keep note state owned by the main process so a later manager can operate on the same notes without coupling independent paper windows to a dashboard. Current priority remains reliable sticky-note interaction and persistence. Do not implement the manager or profiles as part of the current core fixes.
+A future main Paplet window may manage both visible and hidden notes and provide general settings. Potential user-profile support is a future exploration, not authorization for accounts, authentication, sync, or cloud services in the current MVP. Keep note state owned by the main process so a later manager can operate on the same notes without coupling independent paper windows to a dashboard. Current priority remains reliable sticky-note interaction and persistence. Do not implement the manager or profiles as part of the current core fixes.
 
 
 ## Sequencing update - user direction, 2026-11-15

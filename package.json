@@ -1,7 +1,7 @@
 {
-    "name": "stickee",
+    "name": "paplet",
     "version": "1.0.0",
-    "description": "Windows paper-window feasibility prototype",
+    "description": "Local-first desktop notes with the feel of paper",
     "main": "./out/main/index.js",
     "scripts": {
         "dev": "electron-vite dev",
@@ -16,16 +16,18 @@
     "license": "ISC",
     "type": "commonjs",
     "build": {
-        "appId": "local.stickee.prototype",
-        "productName": "Stickee Prototype",
+        "appId": "local.paplet.desktop",
+        "productName": "Paplet",
         "files": [
-            "out/**/*"
+            "out/**/*",
+            "build/icon.png"
         ],
         "directories": {
             "output": "dist"
         },
         "win": {
-            "target": "dir"
+            "target": "dir",
+            "icon": "build/icon.ico"
         },
         "extraResources": [
             {
@@ -40,7 +42,10 @@
                 "from": "node_modules/scheduler/LICENSE",
                 "to": "licenses/scheduler.txt"
             }
-        ]
+        ],
+        "appx": {
+            "displayName": "Paplet"
+        }
     },
     "devDependencies": {
         "@types/node": "^26.6.6",
@@ -55,5 +60,9 @@
         "typescript": "^7.0.2",
         "vite": "^8.3.8",
         "vitest": "^5.1.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Clorkies/paplet.git"
     }
 }

@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, Menu, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'node:path'
 import { release } from 'node:os'
 import { nativeTheme } from 'electron'
@@ -24,7 +24,7 @@ export function createManager(getSnapshot:()=>ManagerSnapshot,action:(value:unkn
  const material=process.platform==='win32'&&Number(release().split('.')[2])>=22621&&!nativeTheme.shouldUseHighContrastColors
  const open=async()=>{
   if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.show();win.focus();return}
-  const current=new BrowserWindow({width:1120,height:780,minWidth:760,minHeight:560,title:'Stickee',backgroundColor:material?'#00000000':'#f4f3ef',...(material?{backgroundMaterial:'acrylic' as const}:{}),show:false,autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'../preload/manager.js'),sandbox:true,contextIsolation:true,nodeIntegration:false}})
+  const current=new BrowserWindow({width:1120,height:780,minWidth:760,minHeight:560,title:'Paplet',icon:join(app.getAppPath(),'build','icon.png'),backgroundColor:material?'#00000000':'#f4f3ef',...(material?{backgroundMaterial:'acrylic' as const}:{}),show:false,autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'../preload/manager.js'),sandbox:true,contextIsolation:true,nodeIntegration:false}})
   win=current;secure(current)
   // Hidden until Alt is pressed; native zoom roles retain their accelerators.
   current.setMenu(Menu.buildFromTemplate([{label:'View',submenu:[{role:'zoomIn'},{role:'zoomOut'},{role:'resetZoom'}]}]))

@@ -7,7 +7,7 @@ export type Config={ink?:Stroke[];curlSide:'left'|'right';text:string;color:Pape
 export type NoteState={color:PaperColor;sound:boolean;soundStyle:SoundStyle}
 /** Native drag sample. Velocity is DIP/second; grab is window-relative DIP. */
 export type Motion={vx:number;vy:number;grabX:number;grabY:number;angle:number;curlSide:'left'|'right'}
-export interface StickeeAPI {
+export interface PapletAPI {
  ink(strokes:Stroke[]):void
  retainEditor():void
  ready():void
@@ -26,4 +26,4 @@ export interface StickeeAPI {
  onLocate(callback:()=>void):()=>void
  onMotion(callback:(motion:Motion)=>void):()=>void
 }
-declare global { interface Window { stickee:StickeeAPI } }
+declare global { interface Window { paplet:PapletAPI } }

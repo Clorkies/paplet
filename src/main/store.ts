@@ -44,7 +44,7 @@ export class NoteStore {
   }
   const raw=readFileSync(this.path,'utf8')
   // Never overwrite a future schema with an older app.
-  try{const version=JSON.parse(raw).schemaVersion;if(typeof version==='number'&&version>SCHEMA_VERSION)throw new Error('Notes were saved by a newer Stickee version')}catch(error){if(error instanceof Error&&error.message.includes('newer Stickee'))throw error}
+  try{const version=JSON.parse(raw).schemaVersion;if(typeof version==='number'&&version>SCHEMA_VERSION)throw new Error('Notes were saved by a newer Paplet version')}catch(error){if(error instanceof Error&&error.message.includes('newer Paplet'))throw error}
   try{return parseData(raw)}catch{
    const recovery=existsSync(this.path+'.bak')?parseData(readFileSync(this.path+'.bak','utf8')):emptyData()
    renameSync(this.path,this.path+`.corrupt-${Date.now()}`)

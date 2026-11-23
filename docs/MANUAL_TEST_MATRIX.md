@@ -10,7 +10,7 @@ refresh rate, revision and evidence when executing these checks.
 
 | Area | Procedure / expected result | Current evidence |
 | --- | --- | --- |
-| Topmost | Repeat launch → Alt+Tab → click Notepad/browser → click/drag note 20 times. Note stays above ordinary apps; background retains focus until selected. | Accepted in the user's manual retest on 2026-11-19. Closed unless it recurs. Earlier root cause unconfirmed. |
+| Topmost | Repeat launch → Alt+Tab → click Notepad/browser → click/drag note 20 times. Note stays above ordinary apps; background retains focus until selected. | Ordinary-app behavior previously accepted. The fullscreen recurrence is recorded below. |
 | Input region | Click four transparent corners 20 times over another app and overlapping notes; repeat during swing and 1.4 s after release. Record forgiving fringe and clipping. | NOT RUN |
 | Approved motion | Observe slow/fast/vertical/diagonal sweeps, corner pinch, reversal, release and regrab. Record regressions without changing animation. | User approved existing motion; current native matrix NOT RUN |
 | Entrance | Create near taskbar and each monitor edge; grab/hide/close/quit during entrance, restart. Keep caught position or destination, never stale intermediate positions. | NOT RUN |
@@ -122,7 +122,7 @@ schema 3. Manager trash uses the same state and restore semantics.
 
 ### Capturing an intermittent note disappearance
 
-Start a fresh Stickee process with the production build and the
+Start a fresh Paplet process with the production build and the
 `--trace-visibility` argument. From the repository in PowerShell:
 
 ```powershell
@@ -179,3 +179,15 @@ All 24 passed native hit-testing, window movement and visible paper-pixel checks
 Private memory at the post-settle checkpoints ranged from 936 to 1,004 MiB and
 ended at 974 MiB. This run covers repeated use across refresh rates; mixed
 DPI, suspend/resume and multi-hour retention remain unverified.
+
+
+## Brave F11 video and note stacking
+
+Play a video in Brave and press F11. Open a note, Alt+Tab back to Brave and leave the mouse still for at least three seconds. Check that Brave keeps keyboard focus and paper remains visible and clickable. Repeat after hiding and reopening the note. On alternate cycles, drag the note by its grip, release and wait for settling. Repeat the sequence on the installed release candidate.
+
+The old build lost the note's native topmost flag after the switch. The desktop pixel changed from paper to video and Windows hit testing returned Brave. The note remained visible, fully opaque, on screen and unminimized, with a live renderer and a clear persisted hidden flag. The same failure occurred over an independent fullscreen Electron window.
+
+The Windows fix uses Electron's pop-up-menu level wherever the note's stacking level is applied, including restoration of its resting input shape. The former floating level explicitly arranged the note behind the taskbar. A note overlapping the taskbar can now appear above it.
+
+Using disposable profiles and a looping local clip, the instrumented production build passed 16 consecutive cycles with Brave confirmed in F11, including eight native drags. An earlier 12-cycle trial flagged one combined foreground/hit-test mismatch whose cause was not captured. Keep the user's retest pending.
+The unpacked Windows executable then passed eight consecutive cycles with four native drags. Each cycle also confirmed that explicit Hide removed the native window from view before reopening it. Typecheck, production build and 66 automated tests passed.
